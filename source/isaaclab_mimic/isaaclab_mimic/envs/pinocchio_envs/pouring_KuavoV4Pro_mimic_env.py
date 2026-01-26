@@ -1,0 +1,207 @@
+# Copyright (c) 2024-2025, The Isaac Lab Project Developers.
+# All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+from __future__ import annotations
+
+import torch
+from collections.abc import Sequence
+
+import isaaclab.utils.math as PoseUtils
+from isaaclab.envs import ManagerBasedRLMimicEnv
+
+
+
+def set_fourth_joints_to_90(env, angle_rad: float = -2.1):
+    """Force zarm_l4_joint and zarm_r4_joint to a given angle (in radians)."""
+    robot = env.scene["robot"]
+
+    # Current joint state after env.reset()
+    joint_pos = robot.data.joint_pos.clone()
+    joint_vel = robot.data.joint_vel.clone()
+
+    # Find indices for the 4th joints by name
+    l4_ids, _ = robot.find_joints(["zarm_l4_joint"])
+    r4_ids, _ = robot.find_joints(["zarm_r4_joint"])
+    l4_id = l4_ids[0]
+    r4_id = r4_ids[0]
+
+    # Set both 4th joints to desired angle, zero velocity
+    joint_pos[:, l4_id] = angle_rad
+    joint_pos[:, r4_id] = angle_rad
+    joint_vel[:, l4_id] = 0.0
+    joint_vel[:, r4_id] = 0.0
+
+    # Push into the sim and targets
+    robot.set_joint_position_target(joint_pos)
+    robot.set_joint_velocity_target(joint_vel)
+    robot.write_joint_state_to_sim(joint_pos, joint_vel)
+
+
+
+
+
+
+class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
+    """Mimic wrapper for KuavoV4Pro.
+    
+    This env handles TWO action formats:
+    1. RECORDED actions (from teleoperation): Joint positions [14 arm + 20 finger]
+    2. GENERATED actions (for Mimic): Pink IK format [7 left pose + 7 right pose + 20 finger]
+    
+    The key is that action_to_target_eef_pose() interprets recorded joint actions
+    by reading the CURRENT EEF pose from observations (after the action was applied).
+    """
+    def reset(self, *args, **kwargs):
+        obs, info = super().reset(*args, **kwargs)
+
+        # FORCE ARM POSE AFTER EVERY RESET
+        set_fourth_joints_to_90(self)
+
+        return obs, info
+        
+    def get_robot_eef_pose(self, eef_name: str, env_ids: Sequence[int] | None = None) -> torch.Tensor:
+        """Return current EEF pose from observations as 4x4 matrices."""
+        if env_ids is None:
+            env_ids = slice(None)
+
+        eef_pos_name = f"{eef_name}_eef_pos"
+        eef_quat_name = f"{eef_name}_eef_quat"
+
+        pos = self.obs_buf["policy"][eef_pos_name][env_ids]
+        rot = PoseUtils.matrix_from_quat(self.obs_buf["policy"][eef_quat_name][env_ids])
+        return PoseUtils.make_pose(pos, rot)
+
+    def target_eef_pose_to_action(
+        self,
+        target_eef_pose_dict: dict,
+        gripper_action_dict: dict,
+        action_noise_dict: dict | None = None,
+        env_id: int = 0,
+    ) -> torch.Tensor:
+        """Convert target EEF pose -> Pink IK action format.
+        
+        Pink IK expects: [left_pos(3), left_quat(4), right_pos(3), right_quat(4), fingers(20)]
+        """
+        # Extract from 4x4 pose matrices
+        left_pos, left_rot = PoseUtils.unmake_pose(target_eef_pose_dict["left"])
+        right_pos, right_rot = PoseUtils.unmake_pose(target_eef_pose_dict["right"])
+        
+        left_quat = PoseUtils.quat_from_matrix(left_rot)
+        right_quat = PoseUtils.quat_from_matrix(right_rot)
+        
+        # Get gripper actions (finger joints)
+        left_gripper = gripper_action_dict.get("left")
+        right_gripper = gripper_action_dict.get("right")
+        
+        if left_gripper is None:
+            left_gripper = torch.zeros(10, device=self.device)
+        else:
+            left_gripper = left_gripper.to(device=self.device)
+            
+        if right_gripper is None:
+            right_gripper = torch.zeros(10, device=self.device)
+        else:
+            right_gripper = right_gripper.to(device=self.device)
+        
+        # Ensure correct shapes (squeeze batch dim if present)
+        if left_pos.dim() > 1:
+            left_pos = left_pos.squeeze(0)
+        if left_quat.dim() > 1:
+            left_quat = left_quat.squeeze(0)
+        if right_pos.dim() > 1:
+            right_pos = right_pos.squeeze(0)
+        if right_quat.dim() > 1:
+            right_quat = right_quat.squeeze(0)
+        if left_gripper.dim() > 1:
+            left_gripper = left_gripper.squeeze(0)
+        if right_gripper.dim() > 1:
+            right_gripper = right_gripper.squeeze(0)
+        
+        # Apply noise if specified
+        if action_noise_dict is not None:
+            if action_noise_dict.get("left") is not None:
+                noise = float(action_noise_dict["left"])
+                left_pos = left_pos + noise * torch.randn_like(left_pos)
+                left_quat = left_quat + noise * torch.randn_like(left_quat)
+                left_quat = left_quat / left_quat.norm()
+            if action_noise_dict.get("right") is not None:
+                noise = float(action_noise_dict["right"])
+                right_pos = right_pos + noise * torch.randn_like(right_pos)
+                right_quat = right_quat + noise * torch.randn_like(right_quat)
+                right_quat = right_quat / right_quat.norm()
+        
+        # Concatenate into Pink IK action format (34D total)
+        action = torch.cat([
+            left_pos,       # 3D
+            left_quat,      # 4D  
+            right_pos,      # 3D
+            right_quat,     # 4D
+            left_gripper,   # 10D
+            right_gripper,  # 10D
+        ], dim=0)
+        
+        return action
+
+    def action_to_target_eef_pose(self, action: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Convert action -> target EEF poses.
+        
+        For RECORDED demos (joint position format), we return the CURRENT observed EEF pose.
+        For GENERATED demos (Pink IK format), we extract poses from the action directly.
+        
+        We detect the format by checking if the action looks like quaternions (normalized).
+        """
+        # Check if this is Pink IK format by looking at quaternion normalization
+        # Pink IK: [pos(3), quat(4), pos(3), quat(4), fingers(20)]
+        # Joint pos: [arm_joints(14), fingers(20)]
+        
+        if action.dim() == 2:
+            # Check if indices 3:7 look like a quaternion (norm ≈ 1)
+            potential_quat = action[:, 3:7]
+            quat_norms = potential_quat.norm(dim=-1)
+            is_pink_ik_format = torch.allclose(quat_norms, torch.ones_like(quat_norms), atol=0.1)
+            
+            if is_pink_ik_format:
+                # Pink IK format - extract poses directly
+                left_pos = action[:, 0:3]
+                left_quat = action[:, 3:7]
+                right_pos = action[:, 7:10]
+                right_quat = action[:, 10:14]
+                
+                left_rot = PoseUtils.matrix_from_quat(left_quat)
+                right_rot = PoseUtils.matrix_from_quat(right_quat)
+                
+                return {
+                    "left": PoseUtils.make_pose(left_pos, left_rot),
+                    "right": PoseUtils.make_pose(right_pos, right_rot),
+                }
+            else:
+                # Joint position format - return current observed poses
+                return {
+                    "left": self.get_robot_eef_pose("left"),
+                    "right": self.get_robot_eef_pose("right"),
+                }
+        else:
+            # For 3D tensors (batched trajectories), assume we need current pose
+            return {
+                "left": self.get_robot_eef_pose("left"),
+                "right": self.get_robot_eef_pose("right"),
+            }
+
+    def actions_to_gripper_actions(self, actions: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Extract finger joints from action sequences.
+        
+        Handles both joint position format [14 arm + 20 finger] 
+        and Pink IK format [14 pose + 20 finger].
+        
+        In both cases, fingers are the last 20 values.
+        """
+        if actions.dim() == 3:
+            # (N, T, D)
+            return {"left": actions[:, :, 14:24], "right": actions[:, :, 24:34]}
+        elif actions.dim() == 2:
+            # (N, D)
+            return {"left": actions[:, 14:24], "right": actions[:, 24:34]}
+        else:
+            raise ValueError(f"Unexpected actions shape: {tuple(actions.shape)}")

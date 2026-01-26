@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2026, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
+# Copyright (c) 2024-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
 # All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -17,7 +17,7 @@ from isaaclab.app import AppLauncher
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Annotate demonstrations for Isaac Lab environments.")
-parser.add_argument("--task", type=str, default=None, help="Name of the task.")
+parser.add_argument("--task", type=str, default="pouring_KuavoV4Pro_mimic_annotate_env", help="Name of the task.")
 parser.add_argument(
     "--input_file", type=str, default="./datasets/dataset.hdf5", help="File name of the dataset to be annotated."
 )
@@ -31,7 +31,7 @@ parser.add_argument("--auto", action="store_true", default=False, help="Automati
 parser.add_argument(
     "--enable_pinocchio",
     action="store_true",
-    default=False,
+    default=True,
     help="Enable Pinocchio.",
 )
 parser.add_argument(
@@ -47,8 +47,7 @@ AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 
 if args_cli.enable_pinocchio:
-    # Import pinocchio before AppLauncher to force the use of the version installed
-    # by IsaacLab and not the one installed by Isaac Sim.
+    # Import pinocchio before AppLauncher to force the use of the version installed by IsaacLab and not the one installed by Isaac Sim
     # pinocchio is required by the Pink IK controllers and the GR1T2 retargeter
     import pinocchio  # noqa: F401
 
@@ -59,13 +58,13 @@ simulation_app = app_launcher.app
 """Rest everything follows."""
 
 import contextlib
-import os
-
 import gymnasium as gym
+import os
 import torch
 
 import isaaclab_mimic.envs  # noqa: F401
 
+#Pinocchio enabled to trigger detection of pinochhio_envs
 if args_cli.enable_pinocchio:
     import isaaclab_mimic.envs.pinocchio_envs  # noqa: F401
 
@@ -107,6 +106,32 @@ def mark_subtask_cb():
     global current_action_index, marked_subtask_action_indices
     marked_subtask_action_indices.append(current_action_index)
     print(f"Marked a subtask signal at action index: {current_action_index}")
+
+
+def set_fourth_joints_to_90(env, angle_rad: float = -2.1):
+    """Force zarm_l4_joint and zarm_r4_joint to a given angle (in radians)."""
+    robot = env.scene["robot"]
+
+    # Current joint state after env.reset()
+    joint_pos = robot.data.joint_pos.clone()
+    joint_vel = robot.data.joint_vel.clone()
+
+    # Find indices for the 4th joints by name
+    l4_ids, _ = robot.find_joints(["zarm_l4_joint"])
+    r4_ids, _ = robot.find_joints(["zarm_r4_joint"])
+    l4_id = l4_ids[0]
+    r4_id = r4_ids[0]
+
+    # Set both 4th joints to desired angle, zero velocity
+    joint_pos[:, l4_id] = angle_rad
+    joint_pos[:, r4_id] = angle_rad
+    joint_vel[:, l4_id] = 0.0
+    joint_vel[:, r4_id] = 0.0
+
+    # Push into the sim and targets
+    robot.set_joint_position_target(joint_pos)
+    robot.set_joint_velocity_target(joint_vel)
+    robot.write_joint_state_to_sim(joint_pos, joint_vel)
 
 
 class PreStepDatagenInfoRecorder(RecorderTerm):
@@ -226,7 +251,10 @@ def main():
     env_cfg.recorders.dataset_filename = output_file_name
 
     # create environment from loaded config
-    env: ManagerBasedRLMimicEnv = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+    # env: ManagerBasedRLMimicEnv = gym.make(args_cli.task, cfg=env_cfg).unwrapped
+    print("TASK:", args_cli.task, type(args_cli.task))
+    task_id = args_cli.task[0] if isinstance(args_cli.task, (list, tuple)) else args_cli.task
+    env = gym.make(task_id, cfg=env_cfg).unwrapped
 
     if not isinstance(env, ManagerBasedRLMimicEnv):
         raise ValueError("The environment should be derived from ManagerBasedRLMimicEnv")
@@ -358,6 +386,7 @@ def replay_episode(
     env.sim.reset()
     env.recorder_manager.reset()
     env.reset_to(initial_state, None, is_relative=True)
+    set_fourth_joints_to_90(env)
     first_action = True
     for action_index, action in enumerate(actions):
         current_action_index = action_index
@@ -448,6 +477,7 @@ def annotate_episode_in_manual_mode(
     subtask_term_signal_action_indices = {}
     subtask_start_signal_action_indices = {}
     for eef_name, eef_subtask_term_signal_names in subtask_term_signal_names.items():
+        print(f"{eef_name}, ANNOTATIOn")
         eef_subtask_start_signal_names = subtask_start_signal_names[eef_name]
         # skip if no subtask annotation is needed for this eef
         if len(eef_subtask_term_signal_names) == 0 and len(eef_subtask_start_signal_names) == 0:

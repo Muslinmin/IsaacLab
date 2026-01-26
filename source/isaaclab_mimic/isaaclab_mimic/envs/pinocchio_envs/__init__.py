@@ -7,6 +7,7 @@
 
 import gymnasium as gym
 
+
 gym.register(
     id="Isaac-PickPlace-GR1T2-Abs-Mimic-v0",
     entry_point=f"{__name__}.pickplace_gr1t2_mimic_env:PickPlaceGR1T2MimicEnv",
@@ -45,5 +46,43 @@ gym.register(
     id="Isaac-Locomanipulation-G1-Abs-Mimic-v0",
     entry_point=f"{__name__}.locomanipulation_g1_mimic_env:LocomanipulationG1MimicEnv",
     kwargs={"env_cfg_entry_point": f"{__name__}.locomanipulation_g1_mimic_env_cfg:LocomanipulationG1MimicEnvCfg"},
+    disable_env_checker=True,
+)
+# ---------------------------------------------------------------------
+# KUAVO 
+# ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# MimicGen (generation) environment
+# ---------------------------------------------------------------------
+gym.register(
+    id="Isaac-Pouring-KuavoV4Pro-Mimic-Gen-v0",
+    entry_point=(
+        f"{__name__}.pouring_KuavoV4Pro_mimic_env:"
+        "PouringKuavoV4ProMimicEnv"
+    ),
+    kwargs={
+        "env_cfg_entry_point": (
+            f"{__name__}.pouring_KuavoV4Pro_mimic_env_cfg:"
+            "PouringKuavoV4ProMimic_GenCfg"
+        ),
+    },
+    disable_env_checker=True,
+)
+
+# ---------------------------------------------------------------------
+# Mimic annotation environment
+# ---------------------------------------------------------------------
+gym.register(
+    id="Isaac-Pouring-KuavoV4Pro-Mimic-Annotate-v0",
+    entry_point=(
+        f"{__name__}.pouring_KuavoV4Pro_mimic_env:"
+        "PouringKuavoV4ProMimicEnv"
+    ),
+    kwargs={
+        "env_cfg_entry_point": (
+            f"{__name__}.pouring_KuavoV4Pro_mimic_env_cfg:"
+            "PouringKuavoV4ProMimic_AnnotateEnvCfg"
+        ),
+    },
     disable_env_checker=True,
 )

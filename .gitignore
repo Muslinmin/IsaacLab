@@ -64,6 +64,19 @@ _build
 # Teleop Recorded Dataset
 /datasets/
 
+# Stray data files
+*.hdf5
+*.h5
+data/
+logs/
+outputs/
+videos/
+*.mp4
+*.npz
+*.pt
+*.pth
+*.ckpt
+
 # Tests
 tests/
 

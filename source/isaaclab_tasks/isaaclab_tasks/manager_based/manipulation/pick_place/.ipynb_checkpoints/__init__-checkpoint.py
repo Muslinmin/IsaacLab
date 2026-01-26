@@ -57,21 +57,12 @@ gym.register(
     disable_env_checker=True,
 )
 
+
 gym.register(
     id="kuavoV4Pro-Pouring-Base",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.kuavoV4ProPouring_env_cfg:PourKuavoV4ProTeleopEnvCfg",
-        "robomimic_bc_cfg_entry_point": f"{agents.__name__}:robomimic/bc_rnn_low_dim.json",
-    },
-    disable_env_checker=True,
-)
-
-gym.register(
-    id="kuavoV4Pro-Pouring-Base_PinkIK",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
-    kwargs={
-        "env_cfg_entry_point": f"{__name__}.kuavoV4ProPouring_pink_ik_env_cfg:KuavoV4ProPouringPinkIKEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.kuavoV4ProPouring_env_cfg:PourKuavoV4ProBaseEnvCfg",
         "robomimic_bc_cfg_entry_point": f"{agents.__name__}:robomimic/bc_rnn_low_dim.json",
     },
     disable_env_checker=True,
