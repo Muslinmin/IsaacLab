@@ -14,7 +14,7 @@ from isaaclab.app import AppLauncher
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Replay demonstrations in Isaac Lab environments.")
 parser.add_argument("--num_envs", type=int, default=1, help="Number of environments to replay episodes.")
-parser.add_argument("--task", type=str, default=None, help="Force to use the specified task.")
+parser.add_argument("--task", type=str, default="kuavoV4Pro-Pouring-Base", help="Force to use the specified task.")
 parser.add_argument(
     "--select_episodes",
     type=int,
@@ -22,7 +22,7 @@ parser.add_argument(
     default=[],
     help="A list of episode indices to be replayed. Keep empty to replay all in the dataset file.",
 )
-parser.add_argument("--dataset_file", type=str, default="datasets/dataset.hdf5", help="Dataset file to be replayed.")
+parser.add_argument("--dataset_file", type=str, default="datasets/tesgenmimic/dataset.hdf5", help="Dataset file to be replayed.")
 parser.add_argument(
     "--validate_states",
     action="store_true",
@@ -41,7 +41,7 @@ parser.add_argument(
 parser.add_argument(
     "--enable_pinocchio",
     action="store_true",
-    default=False,
+    default=True,
     help="Enable Pinocchio.",
 )
 
@@ -80,6 +80,29 @@ import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
 
 is_paused = False
+
+
+def set_fourth_joints_to_90(env, env_ids: torch.Tensor, angle_rad: float = -2.1):
+    """Force zarm_l4_joint and zarm_r4_joint to a given angle (in radians) for selected envs."""
+    robot = env.scene["robot"]
+
+    joint_pos = robot.data.joint_pos.clone()
+    joint_vel = robot.data.joint_vel.clone()
+
+    l4_ids, _ = robot.find_joints(["zarm_l4_joint"])
+    r4_ids, _ = robot.find_joints(["zarm_r4_joint"])
+    l4_id = l4_ids[0]
+    r4_id = r4_ids[0]
+
+    # Apply only to env_ids
+    joint_pos[env_ids, l4_id] = angle_rad
+    joint_pos[env_ids, r4_id] = angle_rad
+    joint_vel[env_ids, l4_id] = 0.0
+    joint_vel[env_ids, r4_id] = 0.0
+
+    robot.set_joint_position_target(joint_pos)
+    robot.set_joint_velocity_target(joint_vel)
+    robot.write_joint_state_to_sim(joint_pos, joint_vel)
 
 
 def play_cb():
@@ -258,8 +281,21 @@ def main():
                             )
                             env_episode_data_map[env_id] = episode_data
                             # Set initial state for the new episode
+                            # initial_state = episode_data.get_initial_state()
+                            # env.reset_to(initial_state, torch.tensor([env_id], device=env.device), is_relative=True)
+                            # # Get the first action for the new episode
+                            # env_next_action = env_episode_data_map[env_id].get_next_action()
                             initial_state = episode_data.get_initial_state()
-                            env.reset_to(initial_state, torch.tensor([env_id], device=env.device), is_relative=True)
+                            env_ids = torch.tensor([env_id], device=env.device)
+                            env.reset_to(initial_state, env_ids, is_relative=True)
+
+                            # If you inject a ready pose, state validation will mismatch the dataset.
+                            if not state_validation_enabled:
+                                set_fourth_joints_to_90(env, env_ids, angle_rad=-2.1)
+                                # Optional: step a couple frames to let the targets "take"
+                                for _ in range(2):
+                                    env.step(idle_action)
+
                             # Get the first action for the new episode
                             env_next_action = env_episode_data_map[env_id].get_next_action()
                             has_next_action = True

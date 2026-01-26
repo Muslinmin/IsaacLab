@@ -129,7 +129,54 @@ def main():
 
     # Reset before starting
     env.reset()
+    # Add this after env.reset() in generate_dataset.py
 
+    robot = env.scene["robot"]
+
+    # Check if using teleoperation env or Pink IK env
+    print("\n=== ACTION MANAGER TERMS ===")
+    for name, term in env.action_manager._terms.items():
+        print(f"  {name}: {type(term).__name__}")
+        if hasattr(term, '_joint_ids'):
+            print(f"    Joint IDs: {term._joint_ids}")
+            print(f"    Joint names: {[robot.joint_names[i] for i in term._joint_ids]}")
+
+    # For Pink IK, check hand joint mapping
+    if "pink" in env.action_manager._terms:
+        pink_term = env.action_manager._terms["pink"]
+        if hasattr(pink_term, '_hand_joint_ids'):
+            print(f"\n=== PINK IK HAND JOINT MAPPING ===")
+            print(f"Hand joint IDs: {pink_term._hand_joint_ids}")
+            print(f"Hand joint names: {[robot.joint_names[i] for i in pink_term._hand_joint_ids]}")
+    robot = env.scene["robot"]
+    print("\n=== ALL FINGER JOINTS IN ARTICULATION ===")
+
+    left_finger_keywords = ["l_thumb", "l_index", "l_middle", "l_ring", "l_little"]
+    right_finger_keywords = ["r_thumb", "r_index", "r_middle", "r_ring", "r_little"]
+
+    print("LEFT HAND:")
+    for i, name in enumerate(robot.joint_names):
+        for kw in left_finger_keywords:
+            if kw in name.lower():
+                print(f"  articulation[{i}]: {name}")
+                break
+
+    print("\nRIGHT HAND:")
+    for i, name in enumerate(robot.joint_names):
+        for kw in right_finger_keywords:
+            if kw in name.lower():
+                print(f"  articulation[{i}]: {name}")
+                break
+
+    # # Also print the order used in recording (JointPositionActionCfg)
+    # print("\n=== RECORDING ACTION ORDER (from env_cfg) ===")
+    # print("Left hand joints:", [
+    #     "l_thumbCMC", "l_thumbMCP",
+    #     "l_indexMCP", "l_indexPIP",
+    #     "l_middleMCP", "l_middlePIP",
+    #     "l_ringMCP", "l_ringPIP",
+    #     "l_littleMCP", "l_littlePIP",
+    # ])
     motion_planners = None
     if args_cli.use_skillgen:
         from isaaclab_mimic.motion_planners.curobo.curobo_planner import CuroboPlanner

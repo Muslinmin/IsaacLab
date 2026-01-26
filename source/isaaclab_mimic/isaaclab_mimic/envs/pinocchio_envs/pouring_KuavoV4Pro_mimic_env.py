@@ -84,6 +84,7 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
         
         Pink IK expects: [left_pos(3), left_quat(4), right_pos(3), right_quat(4), fingers(20)]
         """
+
         # Extract from 4x4 pose matrices
         left_pos, left_rot = PoseUtils.unmake_pose(target_eef_pose_dict["left"])
         right_pos, right_rot = PoseUtils.unmake_pose(target_eef_pose_dict["right"])
@@ -190,18 +191,35 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
             }
 
     def actions_to_gripper_actions(self, actions: torch.Tensor) -> dict[str, torch.Tensor]:
-        """Extract finger joints from action sequences.
-        
-        Handles both joint position format [14 arm + 20 finger] 
-        and Pink IK format [14 pose + 20 finger].
-        
-        In both cases, fingers are the last 20 values.
         """
+        Recorded finger actions (per hand) are in teleop order from ActionsCfg:
+        [thumbCMC, thumbMCP, indexMCP, indexPIP, middleMCP, middlePIP, ringMCP, ringPIP, littleMCP, littlePIP]
+
+        Pink IK expects (per hand) order from your printed hand_joint_names:
+        [indexMCP, littleMCP, middleMCP, ringMCP, thumbCMC, indexPIP, littlePIP, middlePIP, ringPIP, thumbMCP]
+
+        So we remap teleop -> pink before returning.
+        """
+        TELEOP_TO_PINK = torch.tensor([2, 8, 4, 6, 0, 3, 9, 5, 7, 1], device=actions.device)
+
+        def remap(x: torch.Tensor, dim: int) -> torch.Tensor:
+            return torch.index_select(x, dim, TELEOP_TO_PINK)
+
         if actions.dim() == 3:
             # (N, T, D)
-            return {"left": actions[:, :, 14:24], "right": actions[:, :, 24:34]}
+            left_teleop  = actions[:, :, -20:-10]  # last 20..10: left hand (10)
+            right_teleop = actions[:, :, -10:]     # last 10: right hand (10)
+            left_pink  = remap(left_teleop, dim=2)
+            right_pink = remap(right_teleop, dim=2)
+
         elif actions.dim() == 2:
-            # (N, D)
-            return {"left": actions[:, 14:24], "right": actions[:, 24:34]}
+            # (N, D) or (T, D)
+            left_teleop  = actions[:, -20:-10]
+            right_teleop = actions[:, -10:]
+            left_pink  = remap(left_teleop, dim=1)
+            right_pink = remap(right_teleop, dim=1)
+
         else:
             raise ValueError(f"Unexpected actions shape: {tuple(actions.shape)}")
+
+        return {"left": left_pink, "right": right_pink}
