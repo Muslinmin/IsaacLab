@@ -13,7 +13,6 @@ Main data generation script.
 import argparse
 
 from isaaclab.app import AppLauncher
-
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Generate demonstrations for Isaac Lab environments.")
 parser.add_argument("--task", type=str, default="Isaac-Pouring-KuavoV4Pro-Mimic-Gen-v0", help="Name of the task.")
@@ -129,44 +128,56 @@ def main():
 
     # Reset before starting
     env.reset()
+    pink = env.action_manager._terms.get("pink", None)
+    print("cfg hand_joint_names len:", len(pink.cfg.hand_joint_names))
+    print("cfg hand_joint_names:", pink.cfg.hand_joint_names)
+
+    if hasattr(pink, "_hand_joint_ids"):
+        print("_hand_joint_ids len:", len(pink._hand_joint_ids))
+        print("_hand_joint_ids names:", [env.scene["robot"].joint_names[i] for i in pink._hand_joint_ids])
+
+    # also check if it stores a split size somewhere
+    for k in ["_num_hand_joints", "_num_hand_joints_per_hand", "_hand_dof_per_hand"]:
+        if hasattr(pink, k):
+            print(k, getattr(pink, k))
     # Add this after env.reset() in generate_dataset.py
 
     robot = env.scene["robot"]
 
     # Check if using teleoperation env or Pink IK env
-    print("\n=== ACTION MANAGER TERMS ===")
-    for name, term in env.action_manager._terms.items():
-        print(f"  {name}: {type(term).__name__}")
-        if hasattr(term, '_joint_ids'):
-            print(f"    Joint IDs: {term._joint_ids}")
-            print(f"    Joint names: {[robot.joint_names[i] for i in term._joint_ids]}")
+    # print("\n=== ACTION MANAGER TERMS ===")
+    # for name, term in env.action_manager._terms.items():
+    #     print(f"  {name}: {type(term).__name__}")
+    #     if hasattr(term, '_joint_ids'):
+    #         print(f"    Joint IDs: {term._joint_ids}")
+    #         print(f"    Joint names: {[robot.joint_names[i] for i in term._joint_ids]}")
 
-    # For Pink IK, check hand joint mapping
-    if "pink" in env.action_manager._terms:
-        pink_term = env.action_manager._terms["pink"]
-        if hasattr(pink_term, '_hand_joint_ids'):
-            print(f"\n=== PINK IK HAND JOINT MAPPING ===")
-            print(f"Hand joint IDs: {pink_term._hand_joint_ids}")
-            print(f"Hand joint names: {[robot.joint_names[i] for i in pink_term._hand_joint_ids]}")
-    robot = env.scene["robot"]
-    print("\n=== ALL FINGER JOINTS IN ARTICULATION ===")
+    # # For Pink IK, check hand joint mapping
+    # if "pink" in env.action_manager._terms:
+    #     pink_term = env.action_manager._terms["pink"]
+    #     if hasattr(pink_term, '_hand_joint_ids'):
+    #         print(f"\n=== PINK IK HAND JOINT MAPPING ===")
+    #         print(f"Hand joint IDs: {pink_term._hand_joint_ids}")
+    #         print(f"Hand joint names: {[robot.joint_names[i] for i in pink_term._hand_joint_ids]}")
+    # robot = env.scene["robot"]
+    # print("\n=== ALL FINGER JOINTS IN ARTICULATION ===")
 
-    left_finger_keywords = ["l_thumb", "l_index", "l_middle", "l_ring", "l_little"]
-    right_finger_keywords = ["r_thumb", "r_index", "r_middle", "r_ring", "r_little"]
+    # left_finger_keywords = ["l_thumb", "l_index", "l_middle", "l_ring", "l_little"]
+    # right_finger_keywords = ["r_thumb", "r_index", "r_middle", "r_ring", "r_little"]
 
-    print("LEFT HAND:")
-    for i, name in enumerate(robot.joint_names):
-        for kw in left_finger_keywords:
-            if kw in name.lower():
-                print(f"  articulation[{i}]: {name}")
-                break
+    # print("LEFT HAND:")
+    # for i, name in enumerate(robot.joint_names):
+    #     for kw in left_finger_keywords:
+    #         if kw in name.lower():
+    #             print(f"  articulation[{i}]: {name}")
+    #             break
 
-    print("\nRIGHT HAND:")
-    for i, name in enumerate(robot.joint_names):
-        for kw in right_finger_keywords:
-            if kw in name.lower():
-                print(f"  articulation[{i}]: {name}")
-                break
+    # print("\nRIGHT HAND:")
+    # for i, name in enumerate(robot.joint_names):
+    #     for kw in right_finger_keywords:
+    #         if kw in name.lower():
+    #             print(f"  articulation[{i}]: {name}")
+    #             break
 
     # # Also print the order used in recording (JointPositionActionCfg)
     # print("\n=== RECORDING ACTION ORDER (from env_cfg) ===")
@@ -244,6 +255,7 @@ def main():
                     planner.plan_visualizer.close()
                     planner.plan_visualizer = None
             motion_planners.clear()
+
 
 
 if __name__ == "__main__":

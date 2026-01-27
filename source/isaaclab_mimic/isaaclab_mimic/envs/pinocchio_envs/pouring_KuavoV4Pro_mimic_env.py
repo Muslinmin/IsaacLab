@@ -49,10 +49,185 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
     This env handles TWO action formats:
     1. RECORDED actions (from teleoperation): Joint positions [14 arm + 20 finger]
     2. GENERATED actions (for Mimic): Pink IK format [7 left pose + 7 right pose + 20 finger]
+
     
+
+
     The key is that action_to_target_eef_pose() interprets recorded joint actions
     by reading the CURRENT EEF pose from observations (after the action was applied).
     """
+
+    # def step(self, action: torch.Tensor):
+    #     obs, reward, terminated, truncated, info = super().step(action)
+    #     robot = self.scene["robot"]
+        
+    #     left_joint_names = [
+    #         "l_thumbCMC", "l_thumbMCP",
+    #         "l_indexMCP", "l_indexPIP",
+    #         "l_middleMCP", "l_middlePIP",
+    #         "l_ringMCP", "l_ringPIP",
+    #         "l_littleMCP", "l_littlePIP",
+    #     ]
+
+    #     right_joint_names = [
+    #         "r_thumbCMC", "r_thumbMCP",
+    #         "r_indexMCP", "r_indexPIP",
+    #         "r_middleMCP", "r_middlePIP",
+    #         "r_ringMCP", "r_ringPIP",
+    #         "r_littleMCP", "r_littlePIP",
+    #     ]
+
+    #     left_ids, _ = robot.find_joints(left_joint_names)
+    #     right_ids, _ = robot.find_joints(right_joint_names)
+
+    #     print("LEFT IDS:", left_ids, [robot.joint_names[i] for i in left_ids])
+    #     print("RIGHT IDS:", right_ids, [robot.joint_names[i] for i in right_ids])
+
+    #     left_actual = robot.data.joint_pos[0, left_ids]
+    #     left_target = robot.data.joint_pos_target[0, left_ids]
+
+    #     # If this is PinkIK-format action: fingers live at action[0, 14:24] and [0, 24:34]
+    #     left_action_fingers = action[0, 14:24]
+    #     right_action_fingers = action[0, 24:34]
+
+    #     print("[DEBUG] L action:", left_action_fingers.tolist())
+    #     print("[DEBUG] L target:", left_target.tolist())
+    #     print("[DEBUG] L actual:", left_actual.tolist())
+    #     print("[DEBUG] R action:", right_action_fingers.tolist())
+    #     print("[DEBUG] R target:", robot.data.joint_pos_target[0, right_ids].tolist())
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._pink_finger_perm = None
+
+    def _compute_pink_finger_perm(self, device: torch.device):
+        pink = self.action_manager._terms.get("pink", None)
+        if pink is None:
+            return None
+
+        robot = self.scene["robot"]
+        cfg_order = list(pink.cfg.hand_joint_names)
+        internal_names = [robot.joint_names[i] for i in pink._hand_joint_ids]
+
+        name_to_idx = {n: i for i, n in enumerate(cfg_order)}
+        perm_list = [name_to_idx[n] for n in internal_names]
+
+        return torch.tensor(perm_list, device=device, dtype=torch.long)
+
+    def step(self, action: torch.Tensor):
+        pink = self.action_manager._terms.get("pink", None)
+
+        # Keep a copy of the original finger vector (cfg/teleop order) for debugging
+        orig_fingers = None
+        if pink is not None and action.shape[1] >= 34:
+            orig_fingers = action[:, 14:34].detach().clone()  # shape (N, 20), in cfg order
+
+            # Ensure perm exists AND is on the same device as action
+            if (
+                self._pink_finger_perm is None
+                or self._pink_finger_perm.device != action.device
+            ):
+                self._pink_finger_perm = self._compute_pink_finger_perm(device=action.device)
+
+            # Apply permutation to match pink._hand_joint_ids orders
+            action = action.clone()
+            action[:, 14:34] = action[:, 14:34].index_select(1, self._pink_finger_perm)
+
+        # Run the real step (this is where joint targets get set)
+        obs, reward, terminated, truncated, info = super().step(action)
+
+        # ---- DEBUG AFTER super().step ----
+        if pink is not None and action.shape[1] >= 34:
+            robot = self.scene["robot"]
+
+            left_joint_names = [
+                "l_thumbCMC", "l_thumbMCP",
+                "l_indexMCP", "l_indexPIP",
+                "l_middleMCP", "l_middlePIP",
+                "l_ringMCP", "l_ringPIP",
+                "l_littleMCP", "l_littlePIP",
+            ]
+            right_joint_names = [
+                "r_thumbCMC", "r_thumbMCP",
+                "r_indexMCP", "r_indexPIP",
+                "r_middleMCP", "r_middlePIP",
+                "r_ringMCP", "r_ringPIP",
+                "r_littleMCP", "r_littlePIP",
+            ]
+
+            left_ids, _ = robot.find_joints(left_joint_names)
+            right_ids, _ = robot.find_joints(right_joint_names)
+
+            # IMPORTANT: use orig_fingers for L/R action prints (cfg order),
+            # because action[:,14:34] is now in Pink internal order (mixed).
+            left_action_fingers = orig_fingers[0, :10]
+            right_action_fingers = orig_fingers[0, 10:]
+
+            print("[DEBUG] L action (cfg order):", left_action_fingers.tolist())
+            print("[DEBUG] L target:", robot.data.joint_pos_target[0, left_ids].tolist())
+            print("[DEBUG] L actual:", robot.data.joint_pos[0, left_ids].tolist())
+            print("[DEBUG] R action (cfg order):", right_action_fingers.tolist())
+            print("[DEBUG] R target:", robot.data.joint_pos_target[0, right_ids].tolist())
+            print("---")
+
+        return obs, reward, terminated, truncated, info
+
+    # def step(self, action: torch.Tensor):
+    #     # --- FIX: reorder finger dims to match pink._hand_joint_ids order ---
+    #     pink = self.action_manager._terms.get("pink", None)
+    #     if pink is not None:
+    #         robot = self.scene["robot"]
+    #         left_joint_names = [
+    #             "l_thumbCMC", "l_thumbMCP",
+    #             "l_indexMCP", "l_indexPIP",
+    #             "l_middleMCP", "l_middlePIP",
+    #             "l_ringMCP", "l_ringPIP",
+    #             "l_littleMCP", "l_littlePIP",
+    #         ]
+
+    #         right_joint_names = [
+    #             "r_thumbCMC", "r_thumbMCP",
+    #             "r_indexMCP", "r_indexPIP",
+    #             "r_middleMCP", "r_middlePIP",
+    #             "r_ringMCP", "r_ringPIP",
+    #             "r_littleMCP", "r_littlePIP",
+    #         ]
+    #         cfg_order = pink.cfg.hand_joint_names
+    #         actual_order = [robot.joint_names[i] for i in pink._hand_joint_ids]
+
+    #         name_to_idx = {n: i for i, n in enumerate(cfg_order)}
+    #         perm = torch.tensor([name_to_idx[n] for n in actual_order], device=action.device)
+
+    #         # action layout: [14 eef + 20 fingers]
+    #         fingers = action[:, 14:34]
+    #         action = action.clone()
+    #         action[:, 14:34] = fingers.index_select(1, perm)
+     
+
+    #         left_ids, _ = robot.find_joints(left_joint_names)
+    #         right_ids, _ = robot.find_joints(right_joint_names)
+
+    #         print("LEFT IDS:", left_ids, [robot.joint_names[i] for i in left_ids])
+    #         print("RIGHT IDS:", right_ids, [robot.joint_names[i] for i in right_ids])
+
+    #         left_actual = robot.data.joint_pos[0, left_ids]
+    #         left_target = robot.data.joint_pos_target[0, left_ids]
+
+    #         # If this is PinkIK-format action: fingers live at action[0, 14:24] and [0, 24:34]
+    #         left_action_fingers = action[0, 14:24]
+    #         right_action_fingers = action[0, 24:34]
+
+    #         print("[DEBUG] L action:", left_action_fingers.tolist())
+    #         print("[DEBUG] L target:", left_target.tolist())
+    #         print("[DEBUG] L actual:", left_actual.tolist())
+    #         print("[DEBUG] R action:", right_action_fingers.tolist())
+    #         print("[DEBUG] R target:", robot.data.joint_pos_target[0, right_ids].tolist())
+        # ---------------------------------------------------------------
+
+        return super().step(action)
+
+
+        
+    #     return obs, reward, terminated, truncated, info
     def reset(self, *args, **kwargs):
         obs, info = super().reset(*args, **kwargs)
 
@@ -95,7 +270,12 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
         # Get gripper actions (finger joints)
         left_gripper = gripper_action_dict.get("left")
         right_gripper = gripper_action_dict.get("right")
-        
+        # DEBUG: Check values BEFORE any processing
+        # if left_gripper is not None:
+        #     print(f"[DEBUG INPUT] left_gripper min/max: {left_gripper.min():.4f} / {left_gripper.max():.4f}")
+        # if right_gripper is not None:
+        #     print(f"[DEBUG INPUT] right_gripper min/max: {right_gripper.min():.4f} / {right_gripper.max():.4f}")
+    
         if left_gripper is None:
             left_gripper = torch.zeros(10, device=self.device)
         else:
@@ -119,7 +299,9 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
             left_gripper = left_gripper.squeeze(0)
         if right_gripper.dim() > 1:
             right_gripper = right_gripper.squeeze(0)
-        
+        # print(f"[DEBUG AFTER SQUEEZE] left min/max: {left_gripper.min():.4f} / {left_gripper.max():.4f}")
+        # print(f"[DEBUG AFTER SQUEEZE] right min/max: {right_gripper.min():.4f} / {right_gripper.max():.4f}")
+    
         # Apply noise if specified
         if action_noise_dict is not None:
             if action_noise_dict.get("left") is not None:
@@ -143,6 +325,10 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
             right_gripper,  # 10D
         ], dim=0)
         
+        # DEBUG: Check final action
+        # print(f"[DEBUG FINAL ACTION] fingers [14:24] min/max: {action[14:24].min():.4f} / {action[14:24].max():.4f}")
+        # print(f"[DEBUG FINAL ACTION] fingers [24:34] min/max: {action[24:34].min():.4f} / {action[24:34].max():.4f}")
+    
         return action
 
     def action_to_target_eef_pose(self, action: torch.Tensor) -> dict[str, torch.Tensor]:
@@ -190,36 +376,48 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
                 "right": self.get_robot_eef_pose("right"),
             }
 
+    # def actions_to_gripper_actions(self, actions: torch.Tensor) -> dict[str, torch.Tensor]:
+    #     """
+    #     Recorded finger actions (per hand) are in teleop order from ActionsCfg:
+    #     [thumbCMC, thumbMCP, indexMCP, indexPIP, middleMCP, middlePIP, ringMCP, ringPIP, littleMCP, littlePIP]
+
+    #     Pink IK expects (per hand) order from your printed hand_joint_names:
+    #     [indexMCP, littleMCP, middleMCP, ringMCP, thumbCMC, indexPIP, littlePIP, middlePIP, ringPIP, thumbMCP]
+
+    #     So we remap teleop -> pink before returning.
+    #     """
+    #     TELEOP_TO_PINK = torch.tensor([2, 8, 4, 6, 0, 3, 9, 5, 7, 1], device=actions.device)
+
+    #     def remap(x: torch.Tensor, dim: int) -> torch.Tensor:
+    #         return torch.index_select(x, dim, TELEOP_TO_PINK)
+
+    #     if actions.dim() == 3:
+    #         # (N, T, D)
+    #         left_teleop  = actions[:, :, -20:-10]  # last 20..10: left hand (10)
+    #         right_teleop = actions[:, :, -10:]     # last 10: right hand (10)
+    #         left_pink  = remap(left_teleop, dim=2)
+    #         right_pink = remap(right_teleop, dim=2)
+
+    #     elif actions.dim() == 2:
+    #         # (N, D) or (T, D)
+    #         left_teleop  = actions[:, -20:-10]
+    #         right_teleop = actions[:, -10:]
+    #         left_pink  = remap(left_teleop, dim=1)
+    #         right_pink = remap(right_teleop, dim=1)
+
+    #     else:
+    #         raise ValueError(f"Unexpected actions shape: {tuple(actions.shape)}")
+
+    #     return {"left": left_pink, "right": right_pink}
     def actions_to_gripper_actions(self, actions: torch.Tensor) -> dict[str, torch.Tensor]:
-        """
-        Recorded finger actions (per hand) are in teleop order from ActionsCfg:
-        [thumbCMC, thumbMCP, indexMCP, indexPIP, middleMCP, middlePIP, ringMCP, ringPIP, littleMCP, littlePIP]
-
-        Pink IK expects (per hand) order from your printed hand_joint_names:
-        [indexMCP, littleMCP, middleMCP, ringMCP, thumbCMC, indexPIP, littlePIP, middlePIP, ringPIP, thumbMCP]
-
-        So we remap teleop -> pink before returning.
-        """
-        TELEOP_TO_PINK = torch.tensor([2, 8, 4, 6, 0, 3, 9, 5, 7, 1], device=actions.device)
-
-        def remap(x: torch.Tensor, dim: int) -> torch.Tensor:
-            return torch.index_select(x, dim, TELEOP_TO_PINK)
-
+        # teleop order: [thumbCMC, thumbMCP, indexMCP, indexPIP, middleMCP, middlePIP, ringMCP, ringPIP, littleMCP, littlePIP]
         if actions.dim() == 3:
-            # (N, T, D)
-            left_teleop  = actions[:, :, -20:-10]  # last 20..10: left hand (10)
-            right_teleop = actions[:, :, -10:]     # last 10: right hand (10)
-            left_pink  = remap(left_teleop, dim=2)
-            right_pink = remap(right_teleop, dim=2)
-
+            left  = actions[:, :, -20:-10]
+            right = actions[:, :, -10:]
         elif actions.dim() == 2:
-            # (N, D) or (T, D)
-            left_teleop  = actions[:, -20:-10]
-            right_teleop = actions[:, -10:]
-            left_pink  = remap(left_teleop, dim=1)
-            right_pink = remap(right_teleop, dim=1)
-
+            left  = actions[:, -20:-10]
+            right = actions[:, -10:]
         else:
             raise ValueError(f"Unexpected actions shape: {tuple(actions.shape)}")
 
-        return {"left": left_pink, "right": right_pink}
+        return {"left": left, "right": right}
