@@ -847,7 +847,8 @@ def run_simulation_loop(
 
             # Expand to batch dimension
             actions = action.repeat(env.num_envs, 1)
-            actions = actions.to(env.device)
+            # actions = actions.to(env.device)
+            actions = actions.to(env.device, non_blocking=True)
             if prev_applied is None:
                 prev_applied = env.scene["robot"].data.joint_pos[:, joint_ids].clone()
 
