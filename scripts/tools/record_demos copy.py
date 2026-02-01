@@ -815,16 +815,13 @@ def run_simulation_loop(
     READY_R4_IDX = 10    # zarm_r4_joint
     READY_ANGLE = -2.1
 
-    READY_THRESH_RAD = 1.0      # how close XR must be to "ready" (try 0.2~0.5)
+    READY_THRESH_RAD = 0.35        # how close XR must be to "ready" (try 0.2~0.5)
     PHASE2_MAX_DELTA = 0.04        # rad per step (slow teleop)
     PHASE1_MAX_DELTA = 0.01        # rad per step (almost frozen)
     L4R4_MAX_DELTA   = 0.06        # allow elbows to converge faster
     last_debug_print_t = 0.0
     DEBUG_PRINT_PERIOD = 0.2   # seconds (5 Hz)
     phase = 1  # 1=acquire ready, 2=slow enable
-    tracking_active = False        # True when we are blending toward teleop
-    TRACKING_LOCK_THRESH = 0.15    # rad, when close enough we can stop tracking if you want
-    TRACKING_SLEW = 0.04           # rad/step (same as PHASE2_MAX_DELTA, tune)
     prev_applied = None  # last action actually sent to sim
     ready_action = None  # [num_envs, dofs] in TELEOP ordering
 
@@ -838,7 +835,6 @@ def run_simulation_loop(
 
             # Expand to batch dimension
             actions = action.repeat(env.num_envs, 1)
-            actions = actions.to(env.device)
             if prev_applied is None:
                 prev_applied = env.scene["robot"].data.joint_pos[:, joint_ids].clone()
 
@@ -867,28 +863,29 @@ def run_simulation_loop(
                     # --- Phase 1 gate: wait until ALL joints are close to ready ---
                     # max absolute error over all dofs
                     ready_action = ready_action.to(raw.device)
-                    # print("raw:", raw.device, "ready_action:", ready_action.device, "env:", env.device)
+                    print("raw:", raw.device, "ready_action:", ready_action.device, "env:", env.device)
                     ARM_DOF = 14  # indices 0..13
                     diff = torch.abs(raw[0, :ARM_DOF] - ready_action[0, :ARM_DOF])
                     max_err = torch.max(diff)
                     # max_err = torch.max(torch.abs(raw[0] - ready_action[0]))
-                    # diff_all = torch.abs(raw[0] - ready_action[0])
-                    # worst_i = int(torch.argmax(diff_all).item())
-                    # worst_val = float(diff_all[worst_i].item())
-                    # print(f"worst idx={worst_i}, diff={worst_val:.2f}")
+                    diff_all = torch.abs(raw[0] - ready_action[0])
+                    worst_i = int(torch.argmax(diff_all).item())
+                    worst_val = float(diff_all[worst_i].item())
+                    print(f"worst idx={worst_i}, diff={worst_val:.2f}")
                     if phase == 1:
                         if max_err <= READY_THRESH_RAD:
                             phase = 2  # you earned control
-                            tracking_active = True
                         # HOLD: do not move robot during phase 1
                         env.step(prev_applied)
 
                     else:
                         # Phase 2: slow enable (rate limit)
                         # Optionally lock l4/r4 during countdown:
-                        tracking_active = True
+                        target = raw.clone()
+                        target[:, READY_L4_IDX] = READY_ANGLE
+                        target[:, READY_R4_IDX] = READY_ANGLE
 
-                        filtered = clamp_delta(prev_applied, raw, TRACKING_SLEW)
+                        filtered = clamp_delta(prev_applied, target, PHASE2_MAX_DELTA)
                         prev_applied = filtered
                         env.step(filtered)
 
@@ -921,26 +918,7 @@ def run_simulation_loop(
             # Perform action on environment
             if running_recording_instance:
                 # Step ONCE
-                raw = actions
-
-                # If we are tracking, blend toward raw; else send raw directly
-                if tracking_active:
-                    # optional: keep elbows locked for the first N frames of recording too
-                    # raw = raw.clone(); raw[:, READY_L4_IDX] = READY_ANGLE; raw[:, READY_R4_IDX] = READY_ANGLE
-
-                    prev_applied = clamp_delta(prev_applied, raw, TRACKING_SLEW)
-                    applied = prev_applied
-
-                    # lock-on condition (arms only is usually best)
-                    ARM_DOF = 14
-                    lock_err = torch.max(torch.abs(applied[0, :ARM_DOF] - raw[0, :ARM_DOF]))
-                    if lock_err <= TRACKING_LOCK_THRESH:
-                        tracking_active = False  # done blending; now follow raw 1:1
-
-                else:
-                    applied = raw
-
-                obs, rew, terminated, truncated, info = env.step(applied)
+                obs, rew, terminated, truncated, info = env.step(actions)
 
                 step_i += 1
                 if step_i % DONE_CHECK_EVERY == 0:
@@ -1000,7 +978,6 @@ def run_simulation_loop(
                 ready_action[:, READY_R4_IDX] = READY_ANGLE
                 phase = 1
                 prev_applied = None
-                tracking_active = False
 
                 should_reset_recording_instance = False
                 should_start_with_delay = False  # Reset the flag
