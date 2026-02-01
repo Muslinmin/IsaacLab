@@ -92,6 +92,21 @@ import pinocchio  # noqa: F401
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
 
+
+
+def save_stage_reference(save_path: str) -> None:
+    import os
+    import omni.usd
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    stage = omni.usd.get_context().get_stage()
+    if stage is None:
+        raise RuntimeError("No USD stage available to save.")
+    stage.GetRootLayer().Export(save_path)
+    print(f"[INFO] Saved reference stage to: {save_path}")
+
+
+
 """Rest everything follows."""
 
 
@@ -798,6 +813,7 @@ def run_simulation_loop(
     # Reset before starting
     # env.sim.reset()
     env.reset()
+    save_stage_reference("outputs/recording_scene_reference.usd")
     print_applied_arm_actuator_gains(env)
 
 
@@ -1061,7 +1077,7 @@ def main() -> None:
 
     # # Create environment
     env = create_environment(env_cfg)
-
+    
     # # Run simulation loop
     current_recorded_demo_count = run_simulation_loop(env, None, success_term, rate_limiter)
 
