@@ -63,6 +63,13 @@ parser.add_argument(
     help="Enable Pinocchio.",
 )
 
+
+parser.add_argument("--stream_camera", action="store_true", default=False,
+                    help="Enable ego camera streaming over ZMQ (default: off)")
+parser.add_argument("--camera_hz", type=float, default=10.0,
+                    help="Camera streaming rate in Hz (only if --stream_camera)")
+
+
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -741,6 +748,7 @@ def run_simulation_loop(
     reset_delay_start_time = 0.0
     should_start_with_delay = False  # Track if we want countdown when startin
 
+
     # Callback closures for the teleop device
 
     def reset_recording_instance():
@@ -827,7 +835,8 @@ def run_simulation_loop(
     TRACKING_SLEW = 0.04           # rad/step (same as PHASE2_MAX_DELTA, tune)
     prev_applied = None  # last action actually sent to sim
     ready_action = None  # [num_envs, dofs] in TELEOP ordering
-
+    last_cam_t = 0.0
+    cam_period = 1.0 / max(args_cli.camera_hz, 1e-6)
 
 
     with contextlib.suppress(KeyboardInterrupt) and torch.inference_mode():
@@ -842,10 +851,13 @@ def run_simulation_loop(
             if prev_applied is None:
                 prev_applied = env.scene["robot"].data.joint_pos[:, joint_ids].clone()
 
-            ego_rgb = env.scene["cam_egoview"].data.output["rgb"][0]  # [H,W,3]
-            ego_rgb_np = ego_rgb.cpu().numpy()
-            #send images
-            teleop_interface.send_camera_frame("cam_egoview", ego_rgb_np)
+            if args_cli.stream_camera:
+                now = time.time()
+                if now - last_cam_t >= cam_period:
+                    last_cam_t = now
+                    ego_rgb = env.scene["cam_egoview"].data.output["rgb"][0]  # [H,W,3]
+                    ego_rgb_np = ego_rgb.cpu().numpy()
+                    teleop_interface.send_camera_frame("cam_egoview", ego_rgb_np)
             if reset_delay_active:
                 elapsed = time.time() - reset_delay_start_time
                 remaining = reset_delay_seconds - elapsed
