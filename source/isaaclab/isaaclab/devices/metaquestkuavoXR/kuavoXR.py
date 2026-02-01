@@ -44,7 +44,7 @@ class KuavoRosJointDeviceCfg:
     jpeg_quality: int = 85
 
 
-class KuavoRosJointDevice(DeviceBase):
+class KuavoRosJointDevice:
     """Device that receives Kuavo joint commands from ROS via ZeroMQ.
 
     - .advance() returns latest joint command as a torch tensor [num_envs, num_dofs]
@@ -53,7 +53,6 @@ class KuavoRosJointDevice(DeviceBase):
     """
 
     def __init__(self, cfg: KuavoRosJointDeviceCfg):
-        super().__init__(cfg)
         self.device = cfg.device
         self.cfg: KuavoRosJointDeviceCfg = cfg
         self._num_dofs = cfg.num_dofs

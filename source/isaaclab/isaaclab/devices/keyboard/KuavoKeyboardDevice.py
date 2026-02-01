@@ -17,7 +17,7 @@ class KuavoKeyboardDeviceCfg:
     verbose: bool = True
 
 
-class KuavoKeyboardDevice(DeviceBase):
+class KuavoKeyboardDevice:
     """Event-driven keyboard device like IsaacLab's se2_keyboard.
 
     Fires events on KEY_PRESS:
@@ -27,7 +27,7 @@ class KuavoKeyboardDevice(DeviceBase):
     """
 
     def __init__(self, cfg: KuavoKeyboardDeviceCfg):
-        super().__init__(cfg)
+        # super().__init__(cfg)
         self.cfg = cfg
 
         # Event registry

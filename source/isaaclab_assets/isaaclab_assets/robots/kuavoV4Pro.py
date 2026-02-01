@@ -3,7 +3,7 @@ import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg
 
 KUAVO_V4PRO_USD_PATH = (
-    "/workspace/biped_s48/biped_s48/biped_s48.usd"
+    "/home/sensethreat/lab_mimic/biped_s48/biped_s48/biped_s48.usd"
 )
 
 
