@@ -808,7 +808,7 @@ def run_simulation_loop(
     instruction_display = setup_ui(label_text, env)
 
     subtasks = {}
-    DONE_CHECK_EVERY = 10   # try 5 or 10
+    DONE_CHECK_EVERY = 1   # try 5 or 10
     step_i = 0
     done_cached = False
     READY_L4_IDX = 3     # from your mapping: zarm_l4_joint
