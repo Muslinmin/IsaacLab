@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
     from isaaclab.managers.command_manager import CommandTerm
 
+import math
 """
 MDP terminations.
 """
@@ -72,6 +73,40 @@ def root_height_below_minimum(
     asset: RigidObject = env.scene[asset_cfg.name]
     return asset.data.root_pos_w[:, 2] < minimum_height
 
+
+def kuavoV4Pouring_cup_tilted_sideways(
+    env,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup"),
+    # height gate in WORLD frame (cheap proxy for “on/near table”)
+    max_height_for_contact: float = 1.10,
+    # sideways if cup’s up-vector is too far from world up
+    # upright: dot ~ 1, sideways: dot ~ 0
+    min_up_dot: float = 0.25,
+) -> torch.Tensor:
+    """Failure if cup is low (near table) AND tilted sideways.
+
+    Uses up-vector alignment (robust vs Euler angle issues).
+    - touching gate uses world Z height (not true contact).
+    - sideways uses dot(up_world, [0,0,1]) < min_up_dot.
+    """
+    cup: RigidObject = env.scene[asset_cfg.name]
+
+    # Gate: near table (WORLD frame Z). Use a value near your table/cup resting height.
+    touching = cup.data.root_pos_w[:, 2] < max_height_for_contact
+
+    # Quaternion (w, x, y, z)
+    q = cup.data.root_quat_w
+    w, x, y, z = q[:, 0], q[:, 1], q[:, 2], q[:, 3]
+
+    # Rotate local Z axis (0,0,1) by quaternion -> up vector in world
+    # Using the rotation matrix element R33-ish:
+    # up_world_z = 1 - 2*(x^2 + y^2)
+    up_world_z = 1.0 - 2.0 * (x * x + y * y)
+
+    # sideways if cup's up vector has low alignment with world up
+    sideways = up_world_z < min_up_dot
+
+    return torch.logical_and(touching, sideways)
 
 """
 Joint terminations.

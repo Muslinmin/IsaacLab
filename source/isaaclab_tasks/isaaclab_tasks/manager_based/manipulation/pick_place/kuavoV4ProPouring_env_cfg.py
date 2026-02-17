@@ -37,6 +37,8 @@ from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.sim.spawners.from_files import UsdFileCfg
 from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
 
+
+
 # ---------------------------
 # Finger joint gain tuning code here
 # ---------------------------
@@ -398,58 +400,51 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     )
 
 
-    
-    sorting_scale = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/SortingScale",
-        init_state=RigidObjectCfg.InitialStateCfg(pos=[0.22236, 0.56, 0.9859], rot=[1, 0, 0, 0]),
-        spawn=UsdFileCfg(
-            usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_scale.usd",
-            scale=(1.0, 1.0, 1.0),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-        ),
-    )
 
-    sorting_bowl = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/SortingBowl",
-        init_state=RigidObjectCfg.InitialStateCfg(pos=[0.02779, 0.43007, 0.9860], rot=[1, 0, 0, 0]),
+    bowl = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Bowl",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=[0.00492, 0.4432, 0.99078],
+        ),
         spawn=UsdFileCfg(
-            usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_bowl_yellow.usd",
-            scale=(1.0, 1.0, 1.5),
+            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/bowl.usd",
+            scale=(0.001, 0.001, 0.001),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
             collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005),
         ),
     )
 
-    sorting_beaker = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/SortingBeaker",
-        init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.13739, 0.45793, 0.9861], rot=[1, 0, 0, 0]),
+
+    pouring_cup = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/PouringCup",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=[-0.26724, 0.39094, 0.98921],
+        ),
         spawn=UsdFileCfg(
-            usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_beaker_red.usd",
-            scale=(0.45, 0.45, 1.3),
+            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/barrel_cup.usd",
+            scale=(0.0007, 0.0007, 0.0008),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
+
+
+
 
     factory_nut = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/FactoryNut",
-        init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.13739, 0.45793, 0.9995], rot=[1, 0, 0, 0]),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.19789, 0.46173, 1.03684], rot=[1, 0, 0, 0]),
         spawn=UsdFileCfg(
             usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/factory_m16_nut_green.usd",
             scale=(0.5, 0.5, 0.5),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                linear_damping=0.2,
+                angular_damping=0.4
+            ),
             collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005),
         ),
     )
 
-    black_sorting_bin = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/BlackSortingBin",
-        init_state=RigidObjectCfg.InitialStateCfg(pos=[-0.32688, 0.46793, 0.98634], rot=[1.0, 0, 0, 0]),
-        spawn=UsdFileCfg(
-            usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/sorting_bin_blue.usd",
-            scale=(0.75, 1.0, 1.0),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-        ),
-    )
+
 
 
 ##
@@ -588,15 +583,37 @@ class TerminationsCfg:
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
-    sorting_bowl_dropped = DoneTerm(
-        func=mdp.root_height_below_minimum, params={"minimum_height": 0.5, "asset_cfg": SceneEntityCfg("sorting_bowl")}
-    )
-    sorting_beaker_dropped = DoneTerm(
+    bowl_dropped = DoneTerm(
         func=mdp.root_height_below_minimum,
-        params={"minimum_height": 0.5, "asset_cfg": SceneEntityCfg("sorting_beaker")},
+        params={
+            "minimum_height": 0.5,
+            "asset_cfg": SceneEntityCfg("bowl"),
+        },
     )
+
+    cup_dropped = DoneTerm(
+        func=mdp.root_height_below_minimum,
+        params={
+            "minimum_height": 0.5,
+            "asset_cfg": SceneEntityCfg("pouring_cup"),
+        },
+    )
+
     factory_nut_dropped = DoneTerm(
-        func=mdp.root_height_below_minimum, params={"minimum_height": 0.5, "asset_cfg": SceneEntityCfg("factory_nut")}
+        func=mdp.root_height_below_minimum,
+        params={
+            "minimum_height": 0.5,
+            "asset_cfg": SceneEntityCfg("factory_nut"),
+        },
+    )
+
+    cup_tilted_sideways = DoneTerm(
+        func=mdp.kuavoV4Pouring_cup_tilted_sideways,
+        params={
+            "asset_cfg": SceneEntityCfg("pouring_cup"),
+            "max_height_for_contact": 1.09,
+            "min_up_dot": 0.25,
+        },
     )
 
     success = DoneTerm(func=mdp.task_done_nut_pour)

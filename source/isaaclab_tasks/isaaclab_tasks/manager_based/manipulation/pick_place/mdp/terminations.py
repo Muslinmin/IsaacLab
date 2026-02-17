@@ -14,8 +14,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import torch
-
-from isaaclab.assets import RigidObject
+from isaaclab.assets import RigidObject, AssetBase
 from isaaclab.managers import SceneEntityCfg
 
 if TYPE_CHECKING:
@@ -89,88 +88,138 @@ def task_done_pick_place(
 
 def task_done_nut_pour(
     env: ManagerBasedRLEnv,
-    sorting_scale_cfg: SceneEntityCfg = SceneEntityCfg("sorting_scale"),
-    sorting_bowl_cfg: SceneEntityCfg = SceneEntityCfg("sorting_bowl"),
-    sorting_beaker_cfg: SceneEntityCfg = SceneEntityCfg("sorting_beaker"),
+    bowl_cfg: SceneEntityCfg = SceneEntityCfg("bowl"),
+    pouring_cup_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup"),
     factory_nut_cfg: SceneEntityCfg = SceneEntityCfg("factory_nut"),
-    sorting_bin_cfg: SceneEntityCfg = SceneEntityCfg("black_sorting_bin"),
-    max_bowl_to_scale_x: float = 0.055,
-    max_bowl_to_scale_y: float = 0.055,
-    max_bowl_to_scale_z: float = 0.025,
-    max_nut_to_bowl_x: float = 0.050,
-    max_nut_to_bowl_y: float = 0.050,
-    max_nut_to_bowl_z: float = 0.019,
-    max_beaker_to_bin_x: float = 0.08,
-    max_beaker_to_bin_y: float = 0.12,
-    max_beaker_to_bin_z: float = 0.07,
+    # nut in bowl
+    max_nut_to_bowl_xy: float = 0.05,
+    min_nut_above_bowl_bottom_z: float = 0.00,
+    max_nut_below_bowl_rim_z: float = 0.12,
+    # cup on table
+    z_threshold: float = 1.02,
+    vz_threshold: float = 0.02,
 ) -> torch.Tensor:
-    """Determine if the nut pouring task is complete.
 
-    This function checks whether all success conditions for the task have been met:
-    1. The factory nut is in the sorting bowl
-    2. The sorting beaker is in the sorting bin
-    3. The sorting bowl is placed on the sorting scale
+    bowl: RigidObject = env.scene[bowl_cfg.name]
+    cup: RigidObject = env.scene[pouring_cup_cfg.name]
+    nut: RigidObject = env.scene[factory_nut_cfg.name]
 
-    Args:
-        env: The RL environment instance.
-        sorting_scale_cfg: Configuration for the sorting scale entity.
-        sorting_bowl_cfg: Configuration for the sorting bowl entity.
-        sorting_beaker_cfg: Configuration for the sorting beaker entity.
-        factory_nut_cfg: Configuration for the factory nut entity.
-        sorting_bin_cfg: Configuration for the sorting bin entity.
-        max_bowl_to_scale_x: Maximum x position of the sorting bowl relative to the sorting scale for task completion.
-        max_bowl_to_scale_y: Maximum y position of the sorting bowl relative to the sorting scale for task completion.
-        max_bowl_to_scale_z: Maximum z position of the sorting bowl relative to the sorting scale for task completion.
-        max_nut_to_bowl_x: Maximum x position of the factory nut relative to the sorting bowl for task completion.
-        max_nut_to_bowl_y: Maximum y position of the factory nut relative to the sorting bowl for task completion.
-        max_nut_to_bowl_z: Maximum z position of the factory nut relative to the sorting bowl for task completion.
-        max_beaker_to_bin_x: Maximum x position of the sorting beaker relative to the sorting bin for task completion.
-        max_beaker_to_bin_y: Maximum y position of the sorting beaker relative to the sorting bin for task completion.
-        max_beaker_to_bin_z: Maximum z position of the sorting beaker relative to the sorting bin for task completion.
+    bowl_pos = bowl.data.root_pos_w - env.scene.env_origins
+    cup_pos = cup.data.root_pos_w - env.scene.env_origins
+    nut_pos = nut.data.root_pos_w - env.scene.env_origins
 
-    Returns:
-        Boolean tensor indicating which environments have completed the task.
-    """
-    # Get object entities from the scene
-    sorting_scale: RigidObject = env.scene[sorting_scale_cfg.name]
-    sorting_bowl: RigidObject = env.scene[sorting_bowl_cfg.name]
-    factory_nut: RigidObject = env.scene[factory_nut_cfg.name]
-    sorting_beaker: RigidObject = env.scene[sorting_beaker_cfg.name]
-    sorting_bin: RigidObject = env.scene[sorting_bin_cfg.name]
+    # nut inside bowl
+    dx = nut_pos[:, 0] - bowl_pos[:, 0]
+    dy = nut_pos[:, 1] - bowl_pos[:, 1]
+    nut_to_bowl_xy = torch.sqrt(dx * dx + dy * dy)
+    nut_rel_z = nut_pos[:, 2] - bowl_pos[:, 2]
 
-    # Get positions relative to environment origin
-    scale_pos = sorting_scale.data.root_pos_w - env.scene.env_origins
-    bowl_pos = sorting_bowl.data.root_pos_w - env.scene.env_origins
-    sorting_beaker_pos = sorting_beaker.data.root_pos_w - env.scene.env_origins
-    nut_pos = factory_nut.data.root_pos_w - env.scene.env_origins
-    bin_pos = sorting_bin.data.root_pos_w - env.scene.env_origins
+    nut_inside_bowl = nut_to_bowl_xy < max_nut_to_bowl_xy
+    nut_inside_bowl = torch.logical_and(nut_inside_bowl, nut_rel_z > min_nut_above_bowl_bottom_z)
+    nut_inside_bowl = torch.logical_and(nut_inside_bowl, nut_rel_z < max_nut_below_bowl_rim_z)
 
-    # nut to bowl
-    nut_to_bowl_x = torch.abs(nut_pos[:, 0] - bowl_pos[:, 0])
-    nut_to_bowl_y = torch.abs(nut_pos[:, 1] - bowl_pos[:, 1])
-    nut_to_bowl_z = nut_pos[:, 2] - bowl_pos[:, 2]
 
-    # bowl to scale
-    bowl_to_scale_x = torch.abs(bowl_pos[:, 0] - scale_pos[:, 0])
-    bowl_to_scale_y = torch.abs(bowl_pos[:, 1] - scale_pos[:, 1])
-    bowl_to_scale_z = bowl_pos[:, 2] - scale_pos[:, 2]
+    # cup on table (vectorized, scalable)
+    cup_z = cup_pos[:, 2]
+    cup_vz = cup.data.root_lin_vel_w[:, 2]
+    cup_on_table = (cup_z < z_threshold) & (torch.abs(cup_vz) < vz_threshold)
 
-    # beaker to bin
-    beaker_to_bin_x = torch.abs(sorting_beaker_pos[:, 0] - bin_pos[:, 0])
-    beaker_to_bin_y = torch.abs(sorting_beaker_pos[:, 1] - bin_pos[:, 1])
-    beaker_to_bin_z = sorting_beaker_pos[:, 2] - bin_pos[:, 2]
+    # if env.num_envs == 1:
+    #     print("---- DEBUG SUCCESS CHECK ----")
+    #     print("nut_to_bowl_xy:", nut_to_bowl_xy.item())
+    #     print("nut_rel_z:", nut_rel_z.item())
+    #     print("cup_z:", cup_pos[:, 2].item())
+    #     print("nut_inside_bowl:", nut_inside_bowl.item())
+    #     print("cup_on_table:", cup_on_table.item())
 
-    done = nut_to_bowl_x < max_nut_to_bowl_x
-    done = torch.logical_and(done, nut_to_bowl_y < max_nut_to_bowl_y)
-    done = torch.logical_and(done, nut_to_bowl_z < max_nut_to_bowl_z)
-    done = torch.logical_and(done, bowl_to_scale_x < max_bowl_to_scale_x)
-    done = torch.logical_and(done, bowl_to_scale_y < max_bowl_to_scale_y)
-    done = torch.logical_and(done, bowl_to_scale_z < max_bowl_to_scale_z)
-    done = torch.logical_and(done, beaker_to_bin_x < max_beaker_to_bin_x)
-    done = torch.logical_and(done, beaker_to_bin_y < max_beaker_to_bin_y)
-    done = torch.logical_and(done, beaker_to_bin_z < max_beaker_to_bin_z)
 
-    return done
+    return torch.logical_and(nut_inside_bowl, cup_on_table)
+
+
+# def task_done_nut_pour(
+#     env: ManagerBasedRLEnv,
+#     sorting_scale_cfg: SceneEntityCfg = SceneEntityCfg("sorting_scale"),
+#     sorting_bowl_cfg: SceneEntityCfg = SceneEntityCfg("sorting_bowl"),
+#     sorting_beaker_cfg: SceneEntityCfg = SceneEntityCfg("sorting_beaker"),
+#     factory_nut_cfg: SceneEntityCfg = SceneEntityCfg("factory_nut"),
+#     sorting_bin_cfg: SceneEntityCfg = SceneEntityCfg("black_sorting_bin"),
+#     max_bowl_to_scale_x: float = 0.055,
+#     max_bowl_to_scale_y: float = 0.055,
+#     max_bowl_to_scale_z: float = 0.025,
+#     max_nut_to_bowl_x: float = 0.050,
+#     max_nut_to_bowl_y: float = 0.050,
+#     max_nut_to_bowl_z: float = 0.019,
+#     max_beaker_to_bin_x: float = 0.08,
+#     max_beaker_to_bin_y: float = 0.12,
+#     max_beaker_to_bin_z: float = 0.07,
+# ) -> torch.Tensor:
+#     """Determine if the nut pouring task is complete.
+
+#     This function checks whether all success conditions for the task have been met:
+#     1. The factory nut is in the sorting bowl
+#     2. The sorting beaker is in the sorting bin
+#     3. The sorting bowl is placed on the sorting scale
+
+#     Args:
+#         env: The RL environment instance.
+#         sorting_scale_cfg: Configuration for the sorting scale entity.
+#         sorting_bowl_cfg: Configuration for the sorting bowl entity.
+#         sorting_beaker_cfg: Configuration for the sorting beaker entity.
+#         factory_nut_cfg: Configuration for the factory nut entity.
+#         sorting_bin_cfg: Configuration for the sorting bin entity.
+#         max_bowl_to_scale_x: Maximum x position of the sorting bowl relative to the sorting scale for task completion.
+#         max_bowl_to_scale_y: Maximum y position of the sorting bowl relative to the sorting scale for task completion.
+#         max_bowl_to_scale_z: Maximum z position of the sorting bowl relative to the sorting scale for task completion.
+#         max_nut_to_bowl_x: Maximum x position of the factory nut relative to the sorting bowl for task completion.
+#         max_nut_to_bowl_y: Maximum y position of the factory nut relative to the sorting bowl for task completion.
+#         max_nut_to_bowl_z: Maximum z position of the factory nut relative to the sorting bowl for task completion.
+#         max_beaker_to_bin_x: Maximum x position of the sorting beaker relative to the sorting bin for task completion.
+#         max_beaker_to_bin_y: Maximum y position of the sorting beaker relative to the sorting bin for task completion.
+#         max_beaker_to_bin_z: Maximum z position of the sorting beaker relative to the sorting bin for task completion.
+
+#     Returns:
+#         Boolean tensor indicating which environments have completed the task.
+#     """
+#     # Get object entities from the scene
+#     sorting_scale: RigidObject = env.scene[sorting_scale_cfg.name]
+#     sorting_bowl: RigidObject = env.scene[sorting_bowl_cfg.name]
+#     factory_nut: RigidObject = env.scene[factory_nut_cfg.name]
+#     sorting_beaker: RigidObject = env.scene[sorting_beaker_cfg.name]
+#     sorting_bin: RigidObject = env.scene[sorting_bin_cfg.name]
+
+#     # Get positions relative to environment origin
+#     scale_pos = sorting_scale.data.root_pos_w - env.scene.env_origins
+#     bowl_pos = sorting_bowl.data.root_pos_w - env.scene.env_origins
+#     sorting_beaker_pos = sorting_beaker.data.root_pos_w - env.scene.env_origins
+#     nut_pos = factory_nut.data.root_pos_w - env.scene.env_origins
+#     bin_pos = sorting_bin.data.root_pos_w - env.scene.env_origins
+
+#     # nut to bowl
+#     nut_to_bowl_x = torch.abs(nut_pos[:, 0] - bowl_pos[:, 0])
+#     nut_to_bowl_y = torch.abs(nut_pos[:, 1] - bowl_pos[:, 1])
+#     nut_to_bowl_z = nut_pos[:, 2] - bowl_pos[:, 2]
+
+#     # bowl to scale
+#     bowl_to_scale_x = torch.abs(bowl_pos[:, 0] - scale_pos[:, 0])
+#     bowl_to_scale_y = torch.abs(bowl_pos[:, 1] - scale_pos[:, 1])
+#     bowl_to_scale_z = bowl_pos[:, 2] - scale_pos[:, 2]
+
+#     # beaker to bin
+#     beaker_to_bin_x = torch.abs(sorting_beaker_pos[:, 0] - bin_pos[:, 0])
+#     beaker_to_bin_y = torch.abs(sorting_beaker_pos[:, 1] - bin_pos[:, 1])
+#     beaker_to_bin_z = sorting_beaker_pos[:, 2] - bin_pos[:, 2]
+
+#     done = nut_to_bowl_x < max_nut_to_bowl_x
+#     done = torch.logical_and(done, nut_to_bowl_y < max_nut_to_bowl_y)
+#     done = torch.logical_and(done, nut_to_bowl_z < max_nut_to_bowl_z)
+#     done = torch.logical_and(done, bowl_to_scale_x < max_bowl_to_scale_x)
+#     done = torch.logical_and(done, bowl_to_scale_y < max_bowl_to_scale_y)
+#     done = torch.logical_and(done, bowl_to_scale_z < max_bowl_to_scale_z)
+#     done = torch.logical_and(done, beaker_to_bin_x < max_beaker_to_bin_x)
+#     done = torch.logical_and(done, beaker_to_bin_y < max_beaker_to_bin_y)
+#     done = torch.logical_and(done, beaker_to_bin_z < max_beaker_to_bin_z)
+
+#     return done
 
 
 def task_done_exhaust_pipe(
