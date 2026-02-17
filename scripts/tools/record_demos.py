@@ -406,7 +406,9 @@ def print_applied_arm_actuator_gains(env):
 def setup_kuavo_teleop_interface():
     teleop_interface = None
     device_cfg = KuavoRosJointDeviceCfg(
-        cmd_sub_address="tcp://192.168.8.102:5555",
+        # tailscale:
+        #cmd_sub_address: str = "tcp://100.93.121.7:5555"
+        cmd_sub_address="tcp://100.93.121.7:5555",
         state_pub_bind="tcp://*:5556",
         num_dofs=34,  # arms + fingers
     )
