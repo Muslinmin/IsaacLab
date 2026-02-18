@@ -422,7 +422,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         ),
         spawn=UsdFileCfg(
             usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/barrel_cup.usd",
-            scale=(0.0007, 0.0007, 0.0008),
+            scale=(0.0006, 0.0006, 0.001),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
@@ -615,6 +615,25 @@ class TerminationsCfg:
             "min_up_dot": 0.25,
         },
     )
+
+    # contents_spilled = DoneTerm(
+    #     func=mdp.kuavoV4Pouring_contents_spill,
+    #     params={
+    #         # bowl geometry
+    #         "max_nut_to_bowl_xy": 0.05,
+    #         "min_nut_above_bowl_bottom_z": 0.00,
+    #         "max_nut_below_bowl_rim_z": 0.12,
+
+    #         # cup geometry
+    #         "max_nut_to_cup_xy": 0.03,
+    #         "min_nut_above_cup_bottom_z": 0.00,
+    #         "max_nut_below_cup_rim_z": 0.08,
+
+    #         # table detection
+    #         "nut_table_z_threshold": 1.02,
+    #         "vz_threshold": 0.02,
+    #     },
+    # )
 
     success = DoneTerm(func=mdp.task_done_nut_pour)
 

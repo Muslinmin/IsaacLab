@@ -1024,9 +1024,6 @@ def run_simulation_loop(
             success_step_count, success_reset_needed = process_success_condition(env, success_term, success_step_count)
             if success_reset_needed:
                 should_reset_recording_instance = True
-                running_recording_instance = False
-                should_start_with_delay = True
-                reset_delay_seconds = args_cli.reset_delay
 
             # Update demo count if it has changed
             if env.recorder_manager.exported_successful_episode_count > current_recorded_demo_count:

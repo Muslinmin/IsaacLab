@@ -108,6 +108,74 @@ def kuavoV4Pouring_cup_tilted_sideways(
 
     return torch.logical_and(touching, sideways)
 
+
+def kuavoV4Pouring_contents_spill(
+    env,
+    bowl_cfg: SceneEntityCfg = SceneEntityCfg("bowl"),
+    pouring_cup_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup"),
+    factory_nut_cfg: SceneEntityCfg = SceneEntityCfg("factory_nut"),
+
+    # bowl geometry
+    max_nut_to_bowl_xy: float = 0.05,
+    min_nut_above_bowl_bottom_z: float = 0.00,
+    max_nut_below_bowl_rim_z: float = 0.12,
+
+    # cup geometry
+    max_nut_to_cup_xy: float = 0.03,
+    min_nut_above_cup_bottom_z: float = 0.00,
+    max_nut_below_cup_rim_z: float = 0.08,
+
+    # table detection
+    nut_table_z_threshold: float = 1.00,
+    vz_threshold: float = 0.02,
+) -> torch.Tensor:
+    """Returns True if nut is spilled (on table and not inside bowl or cup)."""
+
+    bowl: RigidObject = env.scene[bowl_cfg.name]
+    cup: RigidObject = env.scene[pouring_cup_cfg.name]
+    nut: RigidObject = env.scene[factory_nut_cfg.name]
+
+    bowl_pos = bowl.data.root_pos_w - env.scene.env_origins
+    cup_pos = cup.data.root_pos_w - env.scene.env_origins
+    nut_pos = nut.data.root_pos_w - env.scene.env_origins
+
+    # --- inside bowl ---
+    dx = nut_pos[:,0] - bowl_pos[:,0]
+    dy = nut_pos[:,1] - bowl_pos[:,1]
+    nut_to_bowl_xy = torch.sqrt(dx*dx + dy*dy)
+    nut_rel_bowl_z = nut_pos[:,2] - bowl_pos[:,2]
+
+    nut_inside_bowl = (
+        (nut_to_bowl_xy < max_nut_to_bowl_xy)
+        & (nut_rel_bowl_z > min_nut_above_bowl_bottom_z)
+        & (nut_rel_bowl_z < max_nut_below_bowl_rim_z)
+    )
+
+    # --- inside cup ---
+    dx = nut_pos[:,0] - cup_pos[:,0]
+    dy = nut_pos[:,1] - cup_pos[:,1]
+    nut_to_cup_xy = torch.sqrt(dx*dx + dy*dy)
+    nut_rel_cup_z = nut_pos[:,2] - cup_pos[:,2]
+
+    nut_inside_cup = (
+        (nut_to_cup_xy < max_nut_to_cup_xy)
+        & (nut_rel_cup_z > min_nut_above_cup_bottom_z)
+        & (nut_rel_cup_z < max_nut_below_cup_rim_z)
+    )
+
+    # --- on table (not mid air) ---
+    nut_z = nut_pos[:,2]
+    nut_vz = nut.data.root_lin_vel_w[:,2]
+
+    nut_low = nut_z < nut_table_z_threshold
+    nut_settled = torch.abs(nut_vz) < vz_threshold
+    nut_on_table = nut_low & nut_settled
+
+    spilled = nut_on_table & (~nut_inside_bowl) & (~nut_inside_cup)
+
+    return spilled
+
+
 """
 Joint terminations.
 """

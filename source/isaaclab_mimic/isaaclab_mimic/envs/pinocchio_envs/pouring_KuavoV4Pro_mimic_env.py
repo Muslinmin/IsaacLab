@@ -57,44 +57,7 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
     by reading the CURRENT EEF pose from observations (after the action was applied).
     """
 
-    # def step(self, action: torch.Tensor):
-    #     obs, reward, terminated, truncated, info = super().step(action)
-    #     robot = self.scene["robot"]
-        
-    #     left_joint_names = [
-    #         "l_thumbCMC", "l_thumbMCP",
-    #         "l_indexMCP", "l_indexPIP",
-    #         "l_middleMCP", "l_middlePIP",
-    #         "l_ringMCP", "l_ringPIP",
-    #         "l_littleMCP", "l_littlePIP",
-    #     ]
-
-    #     right_joint_names = [
-    #         "r_thumbCMC", "r_thumbMCP",
-    #         "r_indexMCP", "r_indexPIP",
-    #         "r_middleMCP", "r_middlePIP",
-    #         "r_ringMCP", "r_ringPIP",
-    #         "r_littleMCP", "r_littlePIP",
-    #     ]
-
-    #     left_ids, _ = robot.find_joints(left_joint_names)
-    #     right_ids, _ = robot.find_joints(right_joint_names)
-
-    #     print("LEFT IDS:", left_ids, [robot.joint_names[i] for i in left_ids])
-    #     print("RIGHT IDS:", right_ids, [robot.joint_names[i] for i in right_ids])
-
-    #     left_actual = robot.data.joint_pos[0, left_ids]
-    #     left_target = robot.data.joint_pos_target[0, left_ids]
-
-    #     # If this is PinkIK-format action: fingers live at action[0, 14:24] and [0, 24:34]
-    #     left_action_fingers = action[0, 14:24]
-    #     right_action_fingers = action[0, 24:34]
-
-    #     print("[DEBUG] L action:", left_action_fingers.tolist())
-    #     print("[DEBUG] L target:", left_target.tolist())
-    #     print("[DEBUG] L actual:", left_actual.tolist())
-    #     print("[DEBUG] R action:", right_action_fingers.tolist())
-    #     print("[DEBUG] R target:", robot.data.joint_pos_target[0, right_ids].tolist())
+  
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._pink_finger_perm = None
@@ -162,12 +125,12 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
             left_action_fingers = orig_fingers[0, :10]
             right_action_fingers = orig_fingers[0, 10:]
 
-            print("[DEBUG] L action (cfg order):", left_action_fingers.tolist())
-            print("[DEBUG] L target:", robot.data.joint_pos_target[0, left_ids].tolist())
-            print("[DEBUG] L actual:", robot.data.joint_pos[0, left_ids].tolist())
-            print("[DEBUG] R action (cfg order):", right_action_fingers.tolist())
-            print("[DEBUG] R target:", robot.data.joint_pos_target[0, right_ids].tolist())
-            print("---")
+            # print("[DEBUG] L action (cfg order):", left_action_fingers.tolist())
+            # print("[DEBUG] L target:", robot.data.joint_pos_target[0, left_ids].tolist())
+            # print("[DEBUG] L actual:", robot.data.joint_pos[0, left_ids].tolist())
+            # print("[DEBUG] R action (cfg order):", right_action_fingers.tolist())
+            # print("[DEBUG] R target:", robot.data.joint_pos_target[0, right_ids].tolist())
+            # print("---")
 
         return obs, reward, terminated, truncated, info
 

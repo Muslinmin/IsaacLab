@@ -17,7 +17,7 @@ from isaaclab.app import AppLauncher
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Annotate demonstrations for Isaac Lab environments.")
-parser.add_argument("--task", type=str, default="pouring_KuavoV4Pro_mimic_annotate_env", help="Name of the task.")
+parser.add_argument("--task", type=str, default="Isaac-Pouring-KuavoV4Pro-Mimic-Annotate-v0", help="Name of the task.")
 parser.add_argument(
     "--input_file", type=str, default="./datasets/dataset.hdf5", help="File name of the dataset to be annotated."
 )

@@ -115,6 +115,7 @@ import gymnasium as gym
 import os
 import time
 import torch
+import math
 
 # Omniverse logger
 import omni.log
@@ -249,22 +250,20 @@ def setup_output_directories() -> tuple[str, str]:
 
 def create_environment_config(
     output_dir: str, output_file_name: str
-) -> tuple[ManagerBasedRLEnvCfg | DirectRLEnvCfg, object | None, dict]:
+) -> tuple[ManagerBasedRLEnvCfg | DirectRLEnvCfg, object | None]:
     """Create and configure the environment configuration.
 
     Parses the environment configuration and makes necessary adjustments for demo recording.
-    Extracts the success termination function and failure termination functions, then disables
-    ALL termination terms so that env.step() never triggers an auto-reset/export.
+    Extracts the success termination function and configures the recorder manager.
 
     Args:
         output_dir: Directory where recorded demonstrations will be saved
         output_file_name: Name of the file to store the demonstrations
 
     Returns:
-        tuple containing:
+        tuple[isaaclab_tasks.utils.parse_cfg.EnvCfg, Optional[object]]: A tuple containing:
             - env_cfg: The configured environment configuration
             - success_term: The success termination object or None if not available
-            - failure_terms: Dict of {name: term} for failure conditions to check manually
 
     Raises:
         Exception: If parsing the environment configuration fails
@@ -288,30 +287,14 @@ def create_environment_config(
             " Will not be able to mark recorded demos as successful."
         )
 
-    # Extract failure termination terms so we can check them manually.
-    # This prevents env.step() from auto-resetting and exporting failed episodes.
-    FAILURE_TERM_NAMES = [
-        "bowl_dropped",
-        "cup_dropped",
-        "factory_nut_dropped",
-        "cup_tilted_sideways",
-    ]
-    failure_terms = {}
-    for name in FAILURE_TERM_NAMES:
-        if hasattr(env_cfg.terminations, name):
-            term = getattr(env_cfg.terminations, name)
-            if term is not None:
-                failure_terms[name] = term
-                setattr(env_cfg.terminations, name, None)
-                print(f"[record_demos] Extracted failure term '{name}' for manual checking")
-
     # if args_cli.xr:
     #     # If cameras are not enabled and XR is enabled, remove camera configs
     #     if not args_cli.enable_cameras:
     #         env_cfg = remove_camera_configs(env_cfg)
         env_cfg.sim.render.antialiasing_mode = "DLSS"
 
-    # Disable time_out so the environment runs indefinitely
+    # modify configuration such that the environment runs indefinitely until
+    # the goal is reached or other termination conditions are met
     env_cfg.terminations.time_out = None
     env_cfg.observations.policy.concatenate_terms = False
 
@@ -320,7 +303,7 @@ def create_environment_config(
     env_cfg.recorders.dataset_filename = output_file_name
     env_cfg.recorders.dataset_export_mode = DatasetExportMode.EXPORT_SUCCEEDED_ONLY
 
-    return env_cfg, success_term, failure_terms
+    return env_cfg, success_term
 
 
 def create_environment(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg) -> gym.Env:
@@ -757,7 +740,6 @@ def run_simulation_loop(
     teleop_interface: object | None,
     success_term: object | None,
     rate_limiter: RateLimiter | None,
-    failure_terms: dict | None = None,
 ) -> int:
     """Run the main simulation loop for collecting demonstrations.
 
@@ -852,6 +834,9 @@ def run_simulation_loop(
     instruction_display = setup_ui(label_text, env)
 
     subtasks = {}
+    DONE_CHECK_EVERY = 1   # try 5 or 10
+    step_i = 0
+    done_cached = False
     READY_L4_IDX = 3     # from your mapping: zarm_l4_joint
     READY_R4_IDX = 10    # zarm_r4_joint
     READY_ANGLE = -2.1
@@ -988,24 +973,17 @@ def run_simulation_loop(
 
                 obs, rew, terminated, truncated, info = env.step(applied)
 
-                # Check failure conditions manually (these were extracted from
-                # env_cfg.terminations so env.step() never auto-resets/exports).
-                # If any failure fires, discard the current episode and reset.
-                episode_failed = False
-                if failure_terms:
-                    for term_name, term in failure_terms.items():
-                        if bool(term.func(env, **term.params)[0]):
-                            print(f"⚠️  Failure detected: {term_name} — discarding episode")
-                            episode_failed = True
-                            break
+                step_i += 1
+                if step_i % DONE_CHECK_EVERY == 0:
+                    # one GPU->CPU sync every N frames
+                    done_cached = bool((terminated | truncated)[0].item())
 
-                if episode_failed:
-                    # Discard current episode buffer — do NOT export
-                    env.recorder_manager.reset()
+                if done_cached:
                     reset_delay_seconds = (args_cli.reset_delay - 2.0) if args_cli.reset_delay >= 4.0 else 2.0
                     should_reset_recording_instance = True
                     running_recording_instance = False
                     should_start_with_delay = True
+                    done_cached = False
                     continue
 
                 # Send joint state (this also does a GPU->CPU copy; unavoidable for ZMQ)
@@ -1024,9 +1002,6 @@ def run_simulation_loop(
             success_step_count, success_reset_needed = process_success_condition(env, success_term, success_step_count)
             if success_reset_needed:
                 should_reset_recording_instance = True
-                running_recording_instance = False
-                should_start_with_delay = True
-                reset_delay_seconds = args_cli.reset_delay
 
             # Update demo count if it has changed
             if env.recorder_manager.exported_successful_episode_count > current_recorded_demo_count:
@@ -1100,13 +1075,13 @@ def main() -> None:
 
     # # Create and configure environment
     global env_cfg  
-    env_cfg, success_term, failure_terms = create_environment_config(output_dir, output_file_name)
+    env_cfg, success_term = create_environment_config(output_dir, output_file_name)
 
     # # Create environment
     env = create_environment(env_cfg)
     
     # # Run simulation loop
-    current_recorded_demo_count = run_simulation_loop(env, None, success_term, rate_limiter, failure_terms)
+    current_recorded_demo_count = run_simulation_loop(env, None, success_term, rate_limiter)
 
     # Clean up
     env.close()
