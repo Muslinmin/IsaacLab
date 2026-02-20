@@ -17,6 +17,9 @@ import torch
 from isaaclab.assets import RigidObject, AssetBase
 from isaaclab.managers import SceneEntityCfg
 
+from isaaclab.assets import RigidObjectCollection
+
+
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
@@ -134,6 +137,83 @@ def task_done_nut_pour(
 
 
     return torch.logical_and(nut_inside_bowl, cup_on_table)
+
+
+
+def liquid_particle_pour_success(
+    env: ManagerBasedRLEnv,
+    particle_cfg: SceneEntityCfg = SceneEntityCfg("liquid_particles"),
+    bowl_cfg: SceneEntityCfg = SceneEntityCfg("bowl"),
+    pouring_cup_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup"),
+    # How many particles must be in the bowl for success
+    min_in_bowl_count: int = 10,
+    # Bowl containment geometry
+    bowl_xy_radius: float = 0.06,
+    bowl_z_above_bottom: float = -0.02,
+    bowl_z_below_rim: float = 0.12,
+    # Cup must be on the table (not held in air)
+    cup_z_threshold: float = 1.05,
+    cup_vz_threshold: float = 0.05,
+    # Particles in bowl must be settled (low velocity)
+    particle_vel_threshold: float = 0.05,
+) -> torch.Tensor:
+    """Success if enough particles are settled inside the bowl and cup is on table.
+
+    Args:
+        env: The RL environment instance.
+        particle_cfg: SceneEntityCfg for the RigidObjectCollection.
+        bowl_cfg: SceneEntityCfg for the bowl.
+        pouring_cup_cfg: SceneEntityCfg for the pouring cup.
+        min_in_bowl_count: Minimum particles in bowl to declare success.
+        bowl_xy_radius: XY distance threshold for "inside bowl".
+        bowl_z_above_bottom: Min Z offset above bowl origin.
+        bowl_z_below_rim: Max Z offset above bowl origin.
+        cup_z_threshold: Cup must be below this Z (on table, not held).
+        cup_vz_threshold: Cup vertical velocity must be below this.
+        particle_vel_threshold: Particles in bowl must have velocity below this.
+
+    Returns:
+        (num_envs,) bool tensor — True if pour task succeeded.
+    """
+
+    particles: RigidObjectCollection = env.scene[particle_cfg.name]
+    bowl: RigidObject = env.scene[bowl_cfg.name]
+    cup: RigidObject = env.scene[pouring_cup_cfg.name]
+
+    # Particle positions and velocities: (num_envs, num_particles, 3)
+    p_pos = particles.data.object_pos_w
+    p_vel = particles.data.object_lin_vel_w
+
+    # Bowl position: (num_envs, 3) → (num_envs, 1, 3)
+    bowl_pos = bowl.data.root_pos_w.unsqueeze(1)
+
+    # --- Inside bowl check ---
+    p_to_bowl = p_pos - bowl_pos
+    p_to_bowl_xy = torch.sqrt(p_to_bowl[..., 0] ** 2 + p_to_bowl[..., 1] ** 2)
+    p_to_bowl_z = p_to_bowl[..., 2]
+
+    inside_bowl = (
+        (p_to_bowl_xy < bowl_xy_radius)
+        & (p_to_bowl_z > bowl_z_above_bottom)
+        & (p_to_bowl_z < bowl_z_below_rim)
+    )  # (num_envs, num_particles)
+
+    # --- Particles must be settled (low velocity) ---
+    p_speed = torch.norm(p_vel, dim=-1)  # (num_envs, num_particles)
+    settled = p_speed < particle_vel_threshold
+
+    # Particles that are in bowl AND settled
+    in_bowl_settled = inside_bowl & settled  # (num_envs, num_particles)
+    in_bowl_count = in_bowl_settled.sum(dim=1)  # (num_envs,)
+
+    # --- Cup must be on table ---
+    cup_pos = cup.data.root_pos_w
+    cup_vz = cup.data.root_lin_vel_w[:, 2]
+    cup_on_table = (cup_pos[:, 2] < cup_z_threshold) & (torch.abs(cup_vz) < cup_vz_threshold)
+
+    # Success: enough settled particles in bowl AND cup on table
+    return (in_bowl_count >= min_in_bowl_count) & cup_on_table
+
 
 
 # def task_done_nut_pour(

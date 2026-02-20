@@ -833,7 +833,7 @@ def run_simulation_loop(
     # Reset before starting
     # env.sim.reset()
     env.reset()
-    # save_stage_reference("outputs/recording_scene_reference.usd")
+    save_stage_reference("outputs/recording_scene_reference.usd")
     print_applied_arm_actuator_gains(env)
 
 

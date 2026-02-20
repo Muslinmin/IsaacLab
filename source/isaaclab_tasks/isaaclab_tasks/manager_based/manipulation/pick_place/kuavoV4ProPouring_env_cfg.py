@@ -38,6 +38,76 @@ from isaaclab.sim.spawners.from_files import UsdFileCfg
 from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
 
 
+from pxr import Usd, UsdGeom, Gf
+import omni.usd
+
+# PhysX USD schema modules (names can vary slightly across Isaac Sim versions)
+from pxr import PhysxSchema, UsdPhysics
+
+# ============================================================================
+# LIQUID PARTICLE SPHERES — Using RigidObjectCollectionCfg
+# ============================================================================
+#
+# Single scene entity "liquid_particles" containing 24 rigid spheres.
+# Accessed as: env.scene["liquid_particles"]
+# Data shape:  env.scene["liquid_particles"].data.object_pos_w → (num_envs, 24, 3)
+#
+# This is the performant approach for multi-env (96 envs × 24 spheres).
+# One tensor lookup, one vectorized check — no per-sphere Python loops.
+# ============================================================================
+from isaaclab.assets import RigidObjectCollectionCfg
+
+
+
+
+_PARTICLE_USD = "/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/liquid_particles.usd"
+_PARTICLE_SCALE = (0.1, 0.1, 0.1)
+
+# Xform origin (world coordinates)
+_PX, _PY, _PZ = 0.20093, 0.43066, 1.0694
+
+# 2×2 grid spacing and z-layer spacing (meters)
+_GRID_SP = 0.015
+_LAYER_SP = 0.02
+
+
+def _build_liquid_particle_collection() -> RigidObjectCollectionCfg:
+    """Build a single RigidObjectCollectionCfg with 24 spheres."""
+    grid = [
+        (-_GRID_SP / 2, -_GRID_SP / 2),
+        ( _GRID_SP / 2, -_GRID_SP / 2),
+        (-_GRID_SP / 2,  _GRID_SP / 2),
+        ( _GRID_SP / 2,  _GRID_SP / 2),
+    ]
+
+    rigid_objects = {}
+    idx = 0
+    for layer in range(6):  # 6 layers × 4 = 24
+        z_off = layer * _LAYER_SP
+        for dx, dy in grid:
+            name = f"sphere_{idx:02d}"
+            rigid_objects[name] = RigidObjectCfg(
+                prim_path=f"{{ENV_REGEX_NS}}/liquid_particle_{name}",
+                init_state=RigidObjectCfg.InitialStateCfg(
+                    pos=[_PX + dx, _PY + dy, _PZ + z_off],
+                    rot=[1.0, 0.0, 0.0, 0.0],
+                ),
+                spawn=sim_utils.SphereCfg(
+                    radius=0.005,
+                    rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                        linear_damping=0.1,
+                        angular_damping=0.2,
+                    ),
+                    mass_props=sim_utils.MassPropertiesCfg(mass=0.001),
+                    collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.002),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.2, 0.8, 0.2)),
+                ),
+            )
+            idx += 1
+
+    return RigidObjectCollectionCfg(rigid_objects=rigid_objects)
+
+_LIQUID_PARTICLES_CFG = _build_liquid_particle_collection()
 
 # ---------------------------
 # Finger joint gain tuning code here
@@ -427,6 +497,22 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         ),
     )
 
+    pouring_cup_2 = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/PouringCup_2",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=[0.14321, 0.372, 0.99124],
+        ),
+        spawn=UsdFileCfg(
+            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/barrel_cup_2.usd",
+            scale=(0.0006, 0.0006, 0.001),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+        ),
+    )
+
+
+    liquid_particles: RigidObjectCollectionCfg = _LIQUID_PARTICLES_CFG
+
+
 
 
 
@@ -598,6 +684,13 @@ class TerminationsCfg:
             "asset_cfg": SceneEntityCfg("pouring_cup"),
         },
     )
+    cup_2_dropped = DoneTerm(
+        func=mdp.root_height_below_minimum,
+        params={
+            "minimum_height": 0.5,
+            "asset_cfg": SceneEntityCfg("pouring_cup_2"),
+        },
+    )
 
     factory_nut_dropped = DoneTerm(
         func=mdp.root_height_below_minimum,
@@ -616,26 +709,44 @@ class TerminationsCfg:
         },
     )
 
-    # contents_spilled = DoneTerm(
-    #     func=mdp.kuavoV4Pouring_contents_spill,
+    cup_tilted_sideways = DoneTerm(
+        func=mdp.kuavoV4Pouring_cup_tilted_sideways,
+        params={
+            "asset_cfg": SceneEntityCfg("pouring_cup_2"),
+            "max_height_for_contact": 1.09,
+            "min_up_dot": 0.25,
+        },
+    )
+
+
+    # particle_spilled = DoneTerm(
+    #     func=mdp.liquid_particle_spilled,
     #     params={
-    #         # bowl geometry
-    #         "max_nut_to_bowl_xy": 0.05,
-    #         "min_nut_above_bowl_bottom_z": 0.00,
-    #         "max_nut_below_bowl_rim_z": 0.12,
-
-    #         # cup geometry
-    #         "max_nut_to_cup_xy": 0.03,
-    #         "min_nut_above_cup_bottom_z": 0.00,
-    #         "max_nut_below_cup_rim_z": 0.08,
-
-    #         # table detection
-    #         "nut_table_z_threshold": 1.02,
-    #         "vz_threshold": 0.02,
+    #         "particle_cfg": SceneEntityCfg("liquid_particles"),
+    #         "bowl_cfg": SceneEntityCfg("bowl"),
+    #         "pouring_cup_cfg": SceneEntityCfg("pouring_cup"),
+    #         "min_spilled_count": 1,       # adjust: how many spilled = failure
+    #         "bowl_xy_radius": 0.06,       # tune to your bowl size
+    #         "bowl_z_below_rim": 0.12,     # tune to your bowl height
+    #         "cup_xy_radius": 0.04,        # tune to your cup size
+    #         "cup_z_below_rim": 0.10,      # tune to your cup height
     #     },
     # )
 
-    success = DoneTerm(func=mdp.task_done_nut_pour)
+    # success = DoneTerm(func=mdp.task_done_nut_pour)
+    success = DoneTerm(
+        func=mdp.liquid_particle_pour_success,
+        params={
+            "particle_cfg": SceneEntityCfg("liquid_particles"),
+            "bowl_cfg": SceneEntityCfg("bowl"),
+            "pouring_cup_cfg": SceneEntityCfg("pouring_cup_2"),
+            "min_in_bowl_count": 10,      # adjust: how many in bowl = success
+            "bowl_xy_radius": 0.06,
+            "bowl_z_below_rim": 0.12,
+            "cup_z_threshold": 1.05,
+            "particle_vel_threshold": 0.05,
+        },
+    )
 
 
 @configclass
