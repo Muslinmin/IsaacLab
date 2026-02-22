@@ -541,48 +541,43 @@ class ActionsCfg:
     """Action specifications for Kuavo (arms + fingers)."""
     # kuavo_action: ActionTermCfg = MISSING
     # 14 DOFs: 7 left arm joints + 7 right arm joints
-    arms: JointPositionActionCfg = JointPositionActionCfg(
-        asset_name="robot",  # must match SceneCfg field name
+    """Action specifications for Kuavo — single unified 34D term.
+
+    Using ONE JointPositionActionCfg for all 34 DOFs (14 arm + 20 finger) ensures
+    that env.action_manager.action is a single contiguous tensor in a known order:
+        [0:7]   left arm  (zarm_l1..l7)
+        [7:14]  right arm (zarm_r1..r7)
+        [14:24] left hand (l_thumbCMC, l_thumbMCP, l_indexMCP, l_indexPIP,
+                           l_middleMCP, l_middlePIP, l_ringMCP, l_ringPIP,
+                           l_littleMCP, l_littlePIP)
+        [24:34] right hand (r_thumbCMC, r_thumbMCP, r_indexMCP, r_indexPIP,
+                            r_middleMCP, r_middlePIP, r_ringMCP, r_ringPIP,
+                            r_littleMCP, r_littlePIP)
+
+    Previously three separate terms (arms / left_hand / right_hand) caused
+    data/actions in the HDF5 to record garbled hand data because Isaac Lab's
+    ActionManager concatenates multi-term actions in ways that do not faithfully
+    reflect the per-hand split. A single term eliminates this ambiguity entirely.
+    """
+
+    kuavo_all: JointPositionActionCfg = JointPositionActionCfg(
+        asset_name="robot",
         joint_names=[
-            # Left arm: zarm_l1_joint ... zarm_l7_joint
+            # --- Left arm (7 DOF) ---
             *[f"zarm_l{i}_joint" for i in range(1, 8)],
-            # Right arm: zarm_r1_joint ... zarm_r7_joint
+            # --- Right arm (7 DOF) ---
             *[f"zarm_r{i}_joint" for i in range(1, 8)],
-        ],
-        preserve_order=True,
-    )
-
-    # 10 DOFs for left hand fingers
-    left_hand: JointPositionActionCfg = JointPositionActionCfg(
-        asset_name="robot",
-        joint_names=[
-            # thumb
+            # --- Left hand (10 DOF) ---
             "l_thumbCMC", "l_thumbMCP",
-            # index
-            "l_indexMCP", "l_indexPIP",
-            # middle
+            "l_indexMCP",  "l_indexPIP",
             "l_middleMCP", "l_middlePIP",
-            # ring
-            "l_ringMCP", "l_ringPIP",
-            # little
+            "l_ringMCP",   "l_ringPIP",
             "l_littleMCP", "l_littlePIP",
-        ],
-        preserve_order=True,
-    )
-
-    # 10 DOFs for right hand fingers
-    right_hand: JointPositionActionCfg = JointPositionActionCfg(
-        asset_name="robot",
-        joint_names=[
-            # thumb
+            # --- Right hand (10 DOF) ---
             "r_thumbCMC", "r_thumbMCP",
-            # index
-            "r_indexMCP", "r_indexPIP",
-            # middle
+            "r_indexMCP",  "r_indexPIP",
             "r_middleMCP", "r_middlePIP",
-            # ring
-            "r_ringMCP", "r_ringPIP",
-            # little
+            "r_ringMCP",   "r_ringPIP",
             "r_littleMCP", "r_littlePIP",
         ],
         preserve_order=True,
@@ -733,20 +728,20 @@ class TerminationsCfg:
     #     },
     # )
 
-    # success = DoneTerm(func=mdp.task_done_nut_pour)
-    success = DoneTerm(
-        func=mdp.liquid_particle_pour_success,
-        params={
-            "particle_cfg": SceneEntityCfg("liquid_particles"),
-            "bowl_cfg": SceneEntityCfg("bowl"),
-            "pouring_cup_cfg": SceneEntityCfg("pouring_cup_2"),
-            "min_in_bowl_count": 10,      # adjust: how many in bowl = success
-            "bowl_xy_radius": 0.06,
-            "bowl_z_below_rim": 0.12,
-            "cup_z_threshold": 1.05,
-            "particle_vel_threshold": 0.05,
-        },
-    )
+    success = DoneTerm(func=mdp.task_done_nut_pour)
+    # success = DoneTerm(
+    #     func=mdp.liquid_particle_pour_success,
+    #     params={
+    #         "particle_cfg": SceneEntityCfg("liquid_particles"),
+    #         "bowl_cfg": SceneEntityCfg("bowl"),
+    #         "pouring_cup_cfg": SceneEntityCfg("pouring_cup_2"),
+    #         "min_in_bowl_count": 10,      # adjust: how many in bowl = success
+    #         "bowl_xy_radius": 0.06,
+    #         "bowl_z_below_rim": 0.12,
+    #         "cup_z_threshold": 1.05,
+    #         "particle_vel_threshold": 0.05,
+    #     },
+    # )
 
 
 @configclass
