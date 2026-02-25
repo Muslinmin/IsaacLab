@@ -165,7 +165,7 @@ if TYPE_CHECKING:
 # ┌──────────────────────────────────────────────────────────────────────┐
 # │  FLIP THIS TO True TO SEE ALL DEBUG OUTPUT                          │
 # └──────────────────────────────────────────────────────────────────────┘
-DEBUG = False
+DEBUG = True
 
 
 def _dbg(msg: str):

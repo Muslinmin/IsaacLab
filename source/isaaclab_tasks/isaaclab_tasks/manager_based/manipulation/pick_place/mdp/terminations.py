@@ -140,6 +140,34 @@ def task_done_nut_pour(
 
 
 
+"""Updated liquid_particle_pour_success — with debug prints and robust
+bowl/table Z caching that handles domain randomization.
+
+Key changes:
+  - Added DEBUG prints to diagnose why success doesn't trigger
+  - Bowl cache now uses step 1 (not 0) to ensure post-reset positions are settled
+  - cup_lift_threshold is already relative to table_z so that's fine
+  - Added table_cfg parameter (was already there)
+
+Set DEBUG_SUCCESS = True to see per-step diagnostics.
+"""
+
+import torch
+from isaaclab.assets import RigidObject, RigidObjectCollection
+from isaaclab.managers import SceneEntityCfg
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from isaaclab.envs import ManagerBasedRLEnv
+
+
+DEBUG_SUCCESS = True
+
+def _dbg_s(msg: str):
+    if DEBUG_SUCCESS:
+        print(f"[success_dbg] {msg}")
+
+
 def liquid_particle_pour_success(
     env: ManagerBasedRLEnv,
     particle_cfg: SceneEntityCfg = SceneEntityCfg("liquid_particles"),
@@ -155,23 +183,36 @@ def liquid_particle_pour_success(
     cup_lift_threshold: float = 1.05,
     cup_vz_threshold: float = 0.05,
     particle_vel_threshold: float = 0.05,
-    require_both: bool = False
+    require_both: bool = False,
 ) -> torch.Tensor:
 
     bowl: RigidObject = env.scene[bowl_cfg.name]
 
-    # Recompute each episode
+    # ── Cache bowl Z bounds — recompute at step <=1 each episode ────────
+    # Using step <=1 instead of ==0 because at step 0 the write_root_pose_to_sim
+    # from reset may not yet be reflected in root_pos_w (needs a sim step).
     cache_key = "_bowl_z_success_cache"
-    if env.episode_length_buf[0] == 0 or not hasattr(env, cache_key):
+    should_recache = env.episode_length_buf[0] <= 1 or not hasattr(env, cache_key)
+
+    if should_recache:
         bowl_z = bowl.data.root_pos_w[:, 2]
         setattr(env, cache_key, {
             "bottom": (bowl_z + bowl_bottom_offset).clone(),
             "rim":    (bowl_z + bowl_rim_offset).clone(),
         })
-    if env.episode_length_buf[0] == 0 or not hasattr(env, "_table_z_success_cache"):
+        if DEBUG_SUCCESS and env.episode_length_buf[0] <= 1:
+            _dbg_s(f"RECACHED bowl Z at step {env.episode_length_buf[0].item()}: "
+                   f"bowl_z={bowl_z[0]:.5f}, "
+                   f"bottom={bowl_z[0].item() + bowl_bottom_offset:.5f}, "
+                   f"rim={bowl_z[0].item() + bowl_rim_offset:.5f}")
+
+    if env.episode_length_buf[0] <= 1 or not hasattr(env, "_table_z_success_cache"):
         table_entity = env.scene[table_cfg.name]
         table_positions, _ = table_entity.get_world_poses()
         env._table_z_success_cache = table_positions[:, 2].clone()
+        if DEBUG_SUCCESS and env.episode_length_buf[0] <= 1:
+            _dbg_s(f"RECACHED table Z at step {env.episode_length_buf[0].item()}: "
+                   f"table_z={table_positions[0, 2]:.5f}")
 
     bowl_cache = getattr(env, cache_key)
     bowl_z_bottom = bowl_cache["bottom"].unsqueeze(1)
@@ -183,18 +224,18 @@ def liquid_particle_pour_success(
         particles: RigidObjectCollection = env.scene[particle_cfg_local.name]
         cup: RigidObject = env.scene[cup_cfg_local.name]
 
-        p_pos = particles.data.object_pos_w
-        p_vel = particles.data.object_lin_vel_w
+        p_pos = particles.data.object_pos_w        # (num_envs, N, 3)
+        p_vel = particles.data.object_lin_vel_w     # (num_envs, N, 3)
         num_particles = p_pos.shape[1]
 
         xy_dist = torch.norm(p_pos[..., :2] - bowl_xy, dim=-1)
         p_z = p_pos[..., 2]
 
-        inside_bowl = (
-            (xy_dist < bowl_xy_radius)
-            & (p_z > bowl_z_bottom)
-            & (p_z < bowl_z_rim)
-        )
+        inside_xy = xy_dist < bowl_xy_radius
+        above_bottom = p_z > bowl_z_bottom
+        below_rim = p_z < bowl_z_rim
+        inside_bowl = inside_xy & above_bottom & below_rim
+
         settled = torch.norm(p_vel, dim=-1) < particle_vel_threshold
         in_bowl_count = (inside_bowl & settled).sum(dim=1)
 
@@ -205,19 +246,58 @@ def liquid_particle_pour_success(
         min_count = int(num_particles * success_ratio)
         success = (in_bowl_count >= min_count) & cup_on_table
 
-        # print(f"[success:{particle_cfg_local.name}] in_bowl: {in_bowl_count[0]}/{num_particles} "
-        #       f"(need {min_count}), cup_on_table: {cup_on_table[0]}")
+        # ── Debug: print every 50 steps + when close to success ─────
+        step = env.episode_length_buf[0].item()
+        should_print = DEBUG_SUCCESS and (step % 50 == 0 or in_bowl_count[0].item() >= max(1, min_count - 5))
+
+        if should_print:
+            # Breakdown: why are particles failing?
+            n_inside_xy_0 = inside_xy[0].sum().item()
+            n_above_bottom_0 = above_bottom[0].sum().item()
+            n_below_rim_0 = below_rim[0].sum().item()
+            n_inside_bowl_0 = inside_bowl[0].sum().item()
+            n_settled_0 = settled[0].sum().item()
+            n_in_bowl_settled_0 = (inside_bowl & settled)[0].sum().item()
+
+            _dbg_s(f"[step {step}] {particle_cfg_local.name}:")
+            _dbg_s(f"  particles: {num_particles}, need: {min_count} ({success_ratio*100:.0f}%)")
+            _dbg_s(f"  inside_xy: {n_inside_xy_0}/{num_particles}  "
+                   f"(bowl_xy_radius={bowl_xy_radius:.3f})")
+            _dbg_s(f"  above_bottom: {n_above_bottom_0}/{num_particles}  "
+                   f"(bowl_z_bottom={bowl_z_bottom[0,0]:.5f})")
+            _dbg_s(f"  below_rim: {n_below_rim_0}/{num_particles}  "
+                   f"(bowl_z_rim={bowl_z_rim[0,0]:.5f})")
+            _dbg_s(f"  inside_bowl (all 3): {n_inside_bowl_0}/{num_particles}")
+            _dbg_s(f"  settled (vel<{particle_vel_threshold}): {n_settled_0}/{num_particles}")
+            _dbg_s(f"  ✅ in_bowl & settled: {n_in_bowl_settled_0}/{num_particles}")
+            _dbg_s(f"  cup_height_above_table: {cup_height[0]:.5f}  "
+                   f"(threshold={cup_lift_threshold:.3f})  "
+                   f"{'✅ on table' if cup_on_table[0] else '❌ NOT on table'}")
+            _dbg_s(f"  cup_vz: {cup_vz[0]:.5f}  "
+                   f"(threshold={cup_vz_threshold:.3f})")
+            _dbg_s(f"  SUCCESS: {success[0].item()}")
+
+            # If close to success but failing, show which particles are outside
+            if n_in_bowl_settled_0 < min_count and n_in_bowl_settled_0 > 0:
+                # Show min/max xy_dist for particles that are settled but outside bowl
+                settled_mask = settled[0]
+                outside_settled = settled_mask & ~inside_bowl[0]
+                if outside_settled.any():
+                    outside_xy_dists = xy_dist[0][outside_settled]
+                    outside_z = p_z[0][outside_settled]
+                    _dbg_s(f"  📍 settled but outside bowl: {outside_settled.sum().item()} particles")
+                    _dbg_s(f"     xy_dist range: [{outside_xy_dists.min():.4f}, {outside_xy_dists.max():.4f}]")
+                    _dbg_s(f"     z range: [{outside_z.min():.5f}, {outside_z.max():.5f}]")
 
         return success
 
     success_cup1 = count_in_bowl(particle_cfg, pouring_cup_cfg)
     success_cup2 = count_in_bowl(particle_cfg_2, pouring_cup_cfg_2)
+
     if require_both:
         return success_cup1 & success_cup2
     else:
-        # Either cup successfully poured = success
         return success_cup1 | success_cup2
-
 
 
 
