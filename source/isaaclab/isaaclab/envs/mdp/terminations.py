@@ -120,7 +120,6 @@ def kuavoV4Pouring_cup_tilted_sideways(
 
     # Angular velocity gate
     ang_speed = torch.norm(cup.data.root_ang_vel_w, dim=-1)
-    cup_is_still = ang_speed < max_cup_ang_speed_for_failure
 
     # print(f"[{asset_cfg.name}] cup_rel_z: {cup_height_above_table[0]:.4f}, tilt_deg: {torch.rad2deg(tilt_angle[0]):.2f}, "
     #     f"cup_is_low: {cup_is_low[0]}, cup_is_fallen: {cup_is_fallen[0]}, "
@@ -166,10 +165,10 @@ def liquid_particle_spilled(
     # Spilled = outside cup AND outside bowl, or fell off table
     spill_count = ((outside_cup & outside_bowl) | fell_off).sum(dim=1)
 
-    print(f"[spill] count: {spill_count[0]}, "
-          f"xy_cup min: {xy_dist_cup[0].min():.4f} max: {xy_dist_cup[0].max():.4f}, "
-          f"xy_bowl min: {xy_dist_bowl[0].min():.4f} max: {xy_dist_bowl[0].max():.4f}, "
-          f"past_grace: {past_grace[0]}")
+    # print(f"[spill] count: {spill_count[0]}, "
+    #       f"xy_cup min: {xy_dist_cup[0].min():.4f} max: {xy_dist_cup[0].max():.4f}, "
+    #       f"xy_bowl min: {xy_dist_bowl[0].min():.4f} max: {xy_dist_bowl[0].max():.4f}, "
+    #       f"past_grace: {past_grace[0]}")
 
     return past_grace & (spill_count >= min_spilled_count)
 

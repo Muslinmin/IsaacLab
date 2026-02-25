@@ -57,39 +57,34 @@ from pxr import PhysxSchema, UsdPhysics
 # ============================================================================
 from isaaclab.assets import RigidObjectCollectionCfg
 
-
-
-
-_PARTICLE_USD = "/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/liquid_particles.usd"
-_PARTICLE_SCALE = (0.1, 0.1, 0.1)
-
-# Xform origin (world coordinates)
 _PX, _PY, _PZ = 0.20093, 0.43066, 1.0694
 
 # 2×2 grid spacing and z-layer spacing (meters)
 _GRID_SP = 0.015
 _LAYER_SP = 0.02
 
-
-def _build_liquid_particle_collection() -> RigidObjectCollectionCfg:
-    """Build a single RigidObjectCollectionCfg with 24 spheres."""
+def _build_liquid_particle_collection(
+    color: tuple[float, float, float] = (0.2, 0.8, 0.2),
+    origin: tuple[float, float, float] = (_PX, _PY, _PZ),
+    prefix: str = "liq",
+) -> RigidObjectCollectionCfg:
+    px, py, pz = origin
     grid = [
         (-_GRID_SP / 2, -_GRID_SP / 2),
         ( _GRID_SP / 2, -_GRID_SP / 2),
         (-_GRID_SP / 2,  _GRID_SP / 2),
         ( _GRID_SP / 2,  _GRID_SP / 2),
     ]
-
     rigid_objects = {}
     idx = 0
-    for layer in range(6):  # 6 layers × 4 = 24
+    for layer in range(6):
         z_off = layer * _LAYER_SP
         for dx, dy in grid:
-            name = f"sphere_{idx:02d}"
+            name = f"{prefix}_sphere_{idx:02d}"
             rigid_objects[name] = RigidObjectCfg(
                 prim_path=f"{{ENV_REGEX_NS}}/liquid_particle_{name}",
                 init_state=RigidObjectCfg.InitialStateCfg(
-                    pos=[_PX + dx, _PY + dy, _PZ + z_off],
+                    pos=[px + dx, py + dy, pz + z_off],
                     rot=[1.0, 0.0, 0.0, 0.0],
                 ),
                 spawn=sim_utils.SphereCfg(
@@ -100,14 +95,25 @@ def _build_liquid_particle_collection() -> RigidObjectCollectionCfg:
                     ),
                     mass_props=sim_utils.MassPropertiesCfg(mass=0.001),
                     collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.002),
-                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.2, 0.8, 0.2)),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=color),
                 ),
             )
             idx += 1
-
     return RigidObjectCollectionCfg(rigid_objects=rigid_objects)
+# Left cup (green)
+_LIQUID_PARTICLES_CFG = _build_liquid_particle_collection(
+    color=(0.2, 0.8, 0.2),
+    origin=(-0.19789, 0.46173, 1.03684),
+    prefix="left",
+)
 
-_LIQUID_PARTICLES_CFG = _build_liquid_particle_collection()
+# Right cup (pink)
+_LIQUID_PARTICLES_CFG_2 = _build_liquid_particle_collection(
+    color=(1.0, 0.753, 0.796),
+    origin=(0.20093, 0.43066, 1.0694),
+    prefix="right",
+)
+
 
 # ---------------------------
 # Finger joint gain tuning code here
@@ -492,7 +498,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         ),
         spawn=UsdFileCfg(
             usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/cup_1.usd",
-            scale=(0.0006, 0.0005, 0.0006),
+            scale=(0.0007, 0.0007, 0.0007),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
@@ -504,13 +510,13 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         ),
         spawn=UsdFileCfg(
             usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/cup_2.usd",
-            scale=(0.0006, 0.0005, 0.0006),
+            scale=(0.0007, 0.0007, 0.0007),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
 
-
     liquid_particles: RigidObjectCollectionCfg = _LIQUID_PARTICLES_CFG
+    liquid_particles_2: RigidObjectCollectionCfg = _LIQUID_PARTICLES_CFG_2
 
 
 
@@ -718,7 +724,7 @@ class TerminationsCfg:
         func=mdp.kuavoV4Pouring_cup_tilted_sideways,
         params={
             "asset_cfg": SceneEntityCfg("pouring_cup"),
-            "max_tilt_angle_rad": 1.2,
+            "max_tilt_angle_rad": 1.4,
             "grace_period_steps": 15,
             "max_cup_ang_speed_for_failure": 0.17,
             "lift_height_above_table": 1.08,
@@ -729,7 +735,7 @@ class TerminationsCfg:
         func=mdp.kuavoV4Pouring_cup_tilted_sideways,
         params={
             "asset_cfg": SceneEntityCfg("pouring_cup_2"),
-            "max_tilt_angle_rad": 1.2,
+            "max_tilt_angle_rad": 1.4,
             "grace_period_steps": 15,
             "max_cup_ang_speed_for_failure": 0.17,
             "lift_height_above_table": 1.08,
@@ -740,7 +746,7 @@ class TerminationsCfg:
     particle_spilled = DoneTerm(
         func=mdp.liquid_particle_spilled,
         params={
-            "particle_cfg": SceneEntityCfg("liquid_particles"),
+            "particle_cfg": SceneEntityCfg("liquid_particles_2"),
             "cup_cfg": SceneEntityCfg("pouring_cup_2"),
             "min_spilled_count": 5,
             "cup_xy_radius": 0.05,
@@ -749,11 +755,23 @@ class TerminationsCfg:
         },
     )
 
-    success = DoneTerm(func=mdp.task_done_nut_pour)
+
+    particle_spilled_2 = DoneTerm(
+        func=mdp.liquid_particle_spilled,
+        params={
+            "particle_cfg": SceneEntityCfg("liquid_particles_2"),
+            "cup_cfg": SceneEntityCfg("pouring_cup_2"),
+            "min_spilled_count": 5,
+            "cup_xy_radius": 0.05,
+            "fell_off_z": 0.50,
+            "grace_period_steps": 30,
+        },
+    )
+
     # success = DoneTerm(
     #     func=mdp.liquid_particle_pour_success,
     #     params={
-    #         "particle_cfg": SceneEntityCfg("liquid_particles"),
+    #         "particle_cfg": SceneEntityCfg("liquid_particles_2"),
     #         "bowl_cfg": SceneEntityCfg("bowl"),
     #         "pouring_cup_cfg": SceneEntityCfg("pouring_cup_2"),
     #         "min_in_bowl_count": 10,      # adjust: how many in bowl = success
