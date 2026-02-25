@@ -8,7 +8,7 @@ from isaaclab.envs.mdp.actions.pink_actions_cfg import PinkInverseKinematicsActi
 from isaaclab.utils import configclass
 
 from isaaclab_tasks.manager_based.manipulation.pick_place.kuavoV4ProPouring_env_cfg import (
-    PourKuavoV4ProBaseEnvCfg,
+    PourKuavoV4ProBaseEnvCfg, PourKuavoV4ProGenerateBaseEnvCfg
 )
 
 
@@ -84,6 +84,32 @@ class KuavoPouringPinkActionsCfg:
 @configclass
 class KuavoV4ProPouringPinkIKEnvCfg(PourKuavoV4ProBaseEnvCfg):
     """Environment config for Mimic data generation with Pink IK."""
+    
+    # CRITICAL: Start with no actions (base has actions=None)
+    actions = None
+    
+    def __post_init__(self):
+        # MUST call super().__post_init__() FIRST to set decimation, episode_length_s, etc.
+        super().__post_init__()
+        
+        # THEN replace actions with Pink IK
+        self.actions = KuavoPouringPinkActionsCfg()
+        
+        # Convert USD to URDF for Pink/Pinocchio
+        temp_urdf_output_path, temp_urdf_meshes_output_path = ControllerUtils.convert_usd_to_urdf(
+            self.scene.robot.spawn.usd_path,
+            "/tmp",
+            force_conversion=True,
+        )
+        
+        # Set URDF paths for the IK controller
+        self.actions.pink.controller.urdf_path = temp_urdf_output_path
+        self.actions.pink.controller.mesh_path = temp_urdf_meshes_output_path
+
+
+@configclass
+class KuavoV4ProPouringPinkIKCosmosEnvCfg(PourKuavoV4ProGenerateBaseEnvCfg):
+    """Different Parent for COSMOS generation, but still uses the same Pink IK action space."""
     
     # CRITICAL: Start with no actions (base has actions=None)
     actions = None

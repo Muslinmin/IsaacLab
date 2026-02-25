@@ -86,3 +86,21 @@ gym.register(
     },
     disable_env_checker=True,
 )
+
+# ---------------------------------------------------------------------
+# Mimic COSMOS  environment
+# ---------------------------------------------------------------------
+gym.register(
+    id="Isaac-Pouring-KuavoV4Pro-Mimic-CosmosGen-v0",
+    entry_point=(
+        f"{__name__}.pouring_KuavoV4Pro_mimic_env:"
+        "PouringKuavoV4ProMimicEnv"
+    ),
+    kwargs={
+        "env_cfg_entry_point": (
+            f"{__name__}.pouring_KuavoV4Pro_mimic_env_cfg:"
+            "PouringKuavoV4ProMimic_CosmosGenCfg"
+        ),
+    },
+    disable_env_checker=True,
+)

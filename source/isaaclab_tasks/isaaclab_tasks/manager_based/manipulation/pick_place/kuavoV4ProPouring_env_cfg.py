@@ -531,6 +531,33 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     )
 
 
+@configclass
+class ObjectTableSceneGenerateCfg(ObjectTableSceneCfg):
+    """Scene for Cosmos data generation — 720p RGB + depth + seg on all cameras."""
+
+    # Override ego camera: 720p + depth + seg
+    cam_egoview = CameraCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/camera/cam_egoview",
+        data_types=["rgb", "distance_to_image_plane", "semantic_segmentation"],
+        width=1280,
+        height=720,
+        spawn=None,
+    )
+    cam_leftwristview = CameraCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/l_palm/cam_leftwristview",
+        data_types=["rgb", "distance_to_image_plane", "semantic_segmentation"],
+        width=1280,
+        height=720,
+        spawn=None,
+    )
+    cam_rightwristview = CameraCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/r_palm/cam_rightwristview",
+        data_types=["rgb", "distance_to_image_plane", "semantic_segmentation"],
+        width=1280,
+        height=720,
+        spawn=None,
+    )
+
 
 
 ##
@@ -774,7 +801,12 @@ class EventCfg:
 
 @configclass
 class PourKuavoV4ProBaseEnvCfg(ManagerBasedRLEnvCfg):
-    """Base configuration for the KuavoV4Pro environment."""
+    """Base configuration for the KuavoV4Pro environment. 
+    Noticed that the actions are left as None here - this base config is meant to be extended by specific env variants (e.g. teleoperation with joint position control) that will define the action space. 
+    This allows us to reuse common settings (scene, observations, terminations, events) while customizing the action space as needed for different experiments.
+
+    During Mimic generation ,this environment will be extended with a variant that defines the PINK IK.
+    """
     
     # Scene settings
     scene: ObjectTableSceneCfg = ObjectTableSceneCfg(num_envs=1, env_spacing=2.5, replicate_physics=True)
@@ -807,6 +839,19 @@ class PourKuavoV4ProBaseEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.render.antialiasing_mode = "OFF"  # disable dlss
 
         # List of image observations in policy observations
+        self.image_obs_list = ["cam_egoview", "cam_rightwristview", "cam_leftwristview"]
+
+
+@configclass
+class PourKuavoV4ProGenerateBaseEnvCfg(PourKuavoV4ProBaseEnvCfg):
+    """Base config for Cosmos generation — swaps scene to 720p multi-modal cameras."""
+    scene: ObjectTableSceneGenerateCfg = ObjectTableSceneGenerateCfg(
+        num_envs=1, env_spacing=2.5, replicate_physics=True
+    )
+
+    def __post_init__(self):
+        super().__post_init__()
+        # All 3 cameras active for Cosmos export
         self.image_obs_list = ["cam_egoview", "cam_rightwristview", "cam_leftwristview"]
 
 
