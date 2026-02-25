@@ -714,21 +714,13 @@ class TerminationsCfg:
         },
     )
 
-    factory_nut_dropped = DoneTerm(
-        func=mdp.root_height_below_minimum,
-        params={
-            "minimum_height": 0.5,
-            "asset_cfg": SceneEntityCfg("factory_nut"),
-        },
-    )
-
     cup_tilted_sideways=DoneTerm(
         func=mdp.kuavoV4Pouring_cup_tilted_sideways,
         params={
             "asset_cfg": SceneEntityCfg("pouring_cup"),
             "max_tilt_angle_rad": 1.2,
             "grace_period_steps": 15,
-            "max_cup_ang_speed_for_failure": 0.1,
+            "max_cup_ang_speed_for_failure": 0.2,
             "lift_height_above_table": 1.08,
         }
     )
@@ -739,7 +731,7 @@ class TerminationsCfg:
             "asset_cfg": SceneEntityCfg("pouring_cup_2"),
             "max_tilt_angle_rad": 1.2,
             "grace_period_steps": 15,
-            "max_cup_ang_speed_for_failure": 0.1,
+            "max_cup_ang_speed_for_failure": 0.2,
             "lift_height_above_table": 1.08,
         },
     )
@@ -749,13 +741,13 @@ class TerminationsCfg:
     #     func=mdp.liquid_particle_spilled,
     #     params={
     #         "particle_cfg": SceneEntityCfg("liquid_particles"),
-    #         "bowl_cfg": SceneEntityCfg("bowl"),
-    #         "pouring_cup_cfg": SceneEntityCfg("pouring_cup"),
-    #         "min_spilled_count": 1,       # adjust: how many spilled = failure
-    #         "bowl_xy_radius": 0.06,       # tune to your bowl size
-    #         "bowl_z_below_rim": 0.12,     # tune to your bowl height
-    #         "cup_xy_radius": 0.04,        # tune to your cup size
-    #         "cup_z_below_rim": 0.10,      # tune to your cup height
+    #         "table_cfg": SceneEntityCfg("table"),
+    #         "min_spilled_count": 5,
+    #         "surface_band_min": -0.01,
+    #         "surface_band_max": 0.05,
+    #         "vel_threshold": 0.05,
+    #         "fell_off_z": 0.50,
+    #         "table_root_to_surface": 0.85,
     #     },
     # )
 

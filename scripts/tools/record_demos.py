@@ -293,7 +293,6 @@ def create_environment_config(
     FAILURE_TERM_NAMES = [
         "bowl_dropped",
         "cup_dropped",
-        "factory_nut_dropped",
         "cup_tilted_sideways",
         "cup_2_tilted_sideways",
     ]

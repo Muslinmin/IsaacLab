@@ -85,80 +85,92 @@ def kuavoV4Pouring_cup_tilted_sideways(
 ) -> torch.Tensor:
     cup: RigidObject = env.scene[asset_cfg.name]
 
-    past_grace = env.episode_length_buf >= grace_period_steps
+    # Cache table Z — XformPrimView get_world_poses() is expensive, only call once
+    if not hasattr(env, "_table_z_cache"):
+        table_entity = env.scene[table_cfg.name]
+        table_positions, _ = table_entity.get_world_poses()  # (num_envs, 3)
+        env._table_z_cache = table_positions[:, 2].clone()   # (num_envs,)
 
-    # Table is a static XformPrim — get Z from its scene entity positions
-    table_entity = env.scene[table_cfg.name]
-    # XformPrimView exposes positions via get_world_poses()
-    table_positions, _ = table_entity.get_world_poses()   # (num_envs, 3)
-    table_z = table_positions[:, 2]                        # (num_envs,)
+    # Cache spawn quaternion — avoids torch.tensor() allocation every step
+    if not hasattr(env, "_cup_qref_cache"):
+        env._cup_qref_cache = cup.data.default_root_state[:, 3:7].clone()  # (num_envs, 4)
 
+    table_z = env._table_z_cache
+    q_ref = env._cup_qref_cache
+
+    # Height gate
     cup_z = cup.data.root_pos_w[:, 2]
     cup_height_above_table = cup_z - table_z
     cup_is_low = cup_height_above_table < lift_height_above_table
 
-    # Tilt from spawn orientation
+    # Grace period
+    past_grace = env.episode_length_buf >= grace_period_steps
+    if not hasattr(env, "_quat_conj_sign"):
+        env._quat_conj_sign = torch.tensor(
+            [1, -1, -1, -1], device=cup.data.root_quat_w.device, dtype=cup.data.root_quat_w.dtype
+        )
+    # Tilt from cached spawn orientation
     q_current = cup.data.root_quat_w
-    q_ref = torch.tensor(
-        [0.7071068, 0.7071068, 0.0, 0.0],
-        device=q_current.device, dtype=q_current.dtype
-    ).unsqueeze(0).expand(q_current.shape[0], -1)
-
-    q_ref_inv = q_ref * torch.tensor([1, -1, -1, -1], device=q_current.device, dtype=q_current.dtype)
+    q_ref_inv = q_ref * env._quat_conj_sign
     w0, x0, y0, z0 = q_ref_inv[:, 0], q_ref_inv[:, 1], q_ref_inv[:, 2], q_ref_inv[:, 3]
     w1, x1, y1, z1 = q_current[:, 0], q_current[:, 1], q_current[:, 2], q_current[:, 3]
     rel_w = torch.clamp(w0*w1 - x0*x1 - y0*y1 - z0*z1, -1.0, 1.0)
     tilt_angle = 2.0 * torch.acos(torch.abs(rel_w))
     cup_is_fallen = tilt_angle > max_tilt_angle_rad
 
+    # Angular velocity gate
     ang_speed = torch.norm(cup.data.root_ang_vel_w, dim=-1)
     cup_is_still = ang_speed < max_cup_ang_speed_for_failure
 
-    print(f"cup_rel_z: {cup_height_above_table[0]:.4f}, tilt_deg: {torch.rad2deg(tilt_angle[0]):.2f}, "
-          f"cup_is_low: {cup_is_low[0]}, cup_is_fallen: {cup_is_fallen[0]}, "
-          f"cup_is_still: {cup_is_still[0]}, past_grace: {past_grace[0]}")
+    print(f"[{asset_cfg.name}] cup_rel_z: {cup_height_above_table[0]:.4f}, tilt_deg: {torch.rad2deg(tilt_angle[0]):.2f}, "
+        f"cup_is_low: {cup_is_low[0]}, cup_is_fallen: {cup_is_fallen[0]}, "
+        f"cup_is_still: {cup_is_still[0]}, past_grace: {past_grace[0]}")
 
-    return past_grace & cup_is_low & cup_is_fallen & cup_is_still
+    return past_grace & cup_is_low & cup_is_fallen
 
 
 def liquid_particle_spilled(
     env: ManagerBasedRLEnv,
     particle_cfg: SceneEntityCfg = SceneEntityCfg("liquid_particles"),
     table_cfg: SceneEntityCfg = SceneEntityCfg("table"),
-    min_spilled_count: int = 1,
-    # Offsets relative to table surface (not absolute Z)
-    surface_offset_min: float = -0.01,
-    surface_offset_max: float = 0.05,
-    vel_threshold: float = 0.03,
-    fell_off_offset: float = -0.5,
+    min_spilled_count: int = 5,
+    surface_band_min: float = -0.01,
+    surface_band_max: float = 0.05,
+    vel_threshold: float = 0.05,
+    fell_off_z: float = 0.50,
+    table_root_to_surface: float = 0.85,
 ) -> torch.Tensor:
-    from isaaclab.assets import RigidObjectCollection
-
     particles: RigidObjectCollection = env.scene[particle_cfg.name]
-    table = env.scene[table_cfg.name]
 
-    # Table top Z per env: (num_envs,) → (num_envs, 1) for broadcasting
-    table_z = table.data.root_pos_w[:, 2].unsqueeze(1)  # (num_envs, 1)
+    # Cache table surface Z
+    if not hasattr(env, "_table_surface_z_cache"):
+        table_entity = env.scene[table_cfg.name]
+        table_positions, _ = table_entity.get_world_poses()  # (num_envs, 3)
+        env._table_surface_z_cache = (
+            (table_positions[:, 2] + table_root_to_surface).unsqueeze(1).clone()
+        )  # (num_envs, 1)
 
-    p_pos = particles.data.object_pos_w        # (num_envs, 24, 3)
-    p_vel = particles.data.object_lin_vel_w    # (num_envs, 24, 3)
+    table_surface_z = env._table_surface_z_cache
 
-    p_z = p_pos[..., 2]                        # (num_envs, 24)
-    p_speed = torch.norm(p_vel, dim=-1)        # (num_envs, 24)
+    p_pos = particles.data.object_pos_w      # (num_envs, 24, 3)
+    p_vel = particles.data.object_lin_vel_w  # (num_envs, 24, 3)
 
-    # Relative to table surface
-    p_rel_z = p_z - table_z                    # (num_envs, 24)
+    p_z = p_pos[..., 2]                      # (num_envs, 24)
+    p_speed = torch.norm(p_vel, dim=-1)      # (num_envs, 24)
+
+    p_rel_z = p_z - table_surface_z          # (num_envs, 24)
 
     on_table = (
-        (p_rel_z > surface_offset_min)
-        & (p_rel_z < surface_offset_max)
+        (p_rel_z > surface_band_min)
+        & (p_rel_z < surface_band_max)
         & (p_speed < vel_threshold)
     )
 
-    fell_off = p_rel_z < fell_off_offset
+    fell_off = p_z < fell_off_z
 
-    spilled = on_table | fell_off
-    spill_count = spilled.sum(dim=1)
+    spill_count = (on_table | fell_off).sum(dim=1)
+
+    print(f"[spill] count: {spill_count[0]}, p_rel_z min: {p_rel_z[0].min():.4f} max: {p_rel_z[0].max():.4f}")
 
     return spill_count >= min_spilled_count
 
