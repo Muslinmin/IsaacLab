@@ -143,163 +143,83 @@ def task_done_nut_pour(
 def liquid_particle_pour_success(
     env: ManagerBasedRLEnv,
     particle_cfg: SceneEntityCfg = SceneEntityCfg("liquid_particles"),
+    particle_cfg_2: SceneEntityCfg = SceneEntityCfg("liquid_particles_2"),
     bowl_cfg: SceneEntityCfg = SceneEntityCfg("bowl"),
     pouring_cup_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup"),
-    # How many particles must be in the bowl for success
-    min_in_bowl_count: int = 10,
-    # Bowl containment geometry
+    pouring_cup_cfg_2: SceneEntityCfg = SceneEntityCfg("pouring_cup_2"),
+    table_cfg: SceneEntityCfg = SceneEntityCfg("table"),
+    success_ratio: float = 0.6,
     bowl_xy_radius: float = 0.06,
-    bowl_z_above_bottom: float = -0.02,
-    bowl_z_below_rim: float = 0.12,
-    # Cup must be on the table (not held in air)
-    cup_z_threshold: float = 1.05,
+    bowl_rim_offset: float = 0.10,
+    bowl_bottom_offset: float = -0.02,
+    cup_lift_threshold: float = 1.05,
     cup_vz_threshold: float = 0.05,
-    # Particles in bowl must be settled (low velocity)
     particle_vel_threshold: float = 0.05,
+    required_both: bool = False
 ) -> torch.Tensor:
-    """Success if enough particles are settled inside the bowl and cup is on table.
 
-    Args:
-        env: The RL environment instance.
-        particle_cfg: SceneEntityCfg for the RigidObjectCollection.
-        bowl_cfg: SceneEntityCfg for the bowl.
-        pouring_cup_cfg: SceneEntityCfg for the pouring cup.
-        min_in_bowl_count: Minimum particles in bowl to declare success.
-        bowl_xy_radius: XY distance threshold for "inside bowl".
-        bowl_z_above_bottom: Min Z offset above bowl origin.
-        bowl_z_below_rim: Max Z offset above bowl origin.
-        cup_z_threshold: Cup must be below this Z (on table, not held).
-        cup_vz_threshold: Cup vertical velocity must be below this.
-        particle_vel_threshold: Particles in bowl must have velocity below this.
-
-    Returns:
-        (num_envs,) bool tensor — True if pour task succeeded.
-    """
-
-    particles: RigidObjectCollection = env.scene[particle_cfg.name]
     bowl: RigidObject = env.scene[bowl_cfg.name]
-    cup: RigidObject = env.scene[pouring_cup_cfg.name]
 
-    # Particle positions and velocities: (num_envs, num_particles, 3)
-    p_pos = particles.data.object_pos_w
-    p_vel = particles.data.object_lin_vel_w
+    # Recompute each episode
+    cache_key = "_bowl_z_success_cache"
+    if env.episode_length_buf[0] == 0 or not hasattr(env, cache_key):
+        bowl_z = bowl.data.root_pos_w[:, 2]
+        setattr(env, cache_key, {
+            "bottom": (bowl_z + bowl_bottom_offset).clone(),
+            "rim":    (bowl_z + bowl_rim_offset).clone(),
+        })
+    if env.episode_length_buf[0] == 0 or not hasattr(env, "_table_z_success_cache"):
+        table_entity = env.scene[table_cfg.name]
+        table_positions, _ = table_entity.get_world_poses()
+        env._table_z_success_cache = table_positions[:, 2].clone()
 
-    # Bowl position: (num_envs, 3) → (num_envs, 1, 3)
-    bowl_pos = bowl.data.root_pos_w.unsqueeze(1)
+    bowl_cache = getattr(env, cache_key)
+    bowl_z_bottom = bowl_cache["bottom"].unsqueeze(1)
+    bowl_z_rim    = bowl_cache["rim"].unsqueeze(1)
+    table_z       = env._table_z_success_cache
+    bowl_xy       = bowl.data.root_pos_w[:, :2].unsqueeze(1)
 
-    # --- Inside bowl check ---
-    p_to_bowl = p_pos - bowl_pos
-    p_to_bowl_xy = torch.sqrt(p_to_bowl[..., 0] ** 2 + p_to_bowl[..., 1] ** 2)
-    p_to_bowl_z = p_to_bowl[..., 2]
+    def count_in_bowl(particle_cfg_local, cup_cfg_local):
+        particles: RigidObjectCollection = env.scene[particle_cfg_local.name]
+        cup: RigidObject = env.scene[cup_cfg_local.name]
 
-    inside_bowl = (
-        (p_to_bowl_xy < bowl_xy_radius)
-        & (p_to_bowl_z > bowl_z_above_bottom)
-        & (p_to_bowl_z < bowl_z_below_rim)
-    )  # (num_envs, num_particles)
+        p_pos = particles.data.object_pos_w
+        p_vel = particles.data.object_lin_vel_w
+        num_particles = p_pos.shape[1]
 
-    # --- Particles must be settled (low velocity) ---
-    p_speed = torch.norm(p_vel, dim=-1)  # (num_envs, num_particles)
-    settled = p_speed < particle_vel_threshold
+        xy_dist = torch.norm(p_pos[..., :2] - bowl_xy, dim=-1)
+        p_z = p_pos[..., 2]
 
-    # Particles that are in bowl AND settled
-    in_bowl_settled = inside_bowl & settled  # (num_envs, num_particles)
-    in_bowl_count = in_bowl_settled.sum(dim=1)  # (num_envs,)
+        inside_bowl = (
+            (xy_dist < bowl_xy_radius)
+            & (p_z > bowl_z_bottom)
+            & (p_z < bowl_z_rim)
+        )
+        settled = torch.norm(p_vel, dim=-1) < particle_vel_threshold
+        in_bowl_count = (inside_bowl & settled).sum(dim=1)
 
-    # --- Cup must be on table ---
-    cup_pos = cup.data.root_pos_w
-    cup_vz = cup.data.root_lin_vel_w[:, 2]
-    cup_on_table = (cup_pos[:, 2] < cup_z_threshold) & (torch.abs(cup_vz) < cup_vz_threshold)
+        cup_height = cup.data.root_pos_w[:, 2] - table_z
+        cup_vz = cup.data.root_lin_vel_w[:, 2]
+        cup_on_table = (cup_height < cup_lift_threshold) & (torch.abs(cup_vz) < cup_vz_threshold)
 
-    # Success: enough settled particles in bowl AND cup on table
-    return (in_bowl_count >= min_in_bowl_count) & cup_on_table
+        min_count = int(num_particles * success_ratio)
+        success = (in_bowl_count >= min_count) & cup_on_table
+
+        print(f"[success:{particle_cfg_local.name}] in_bowl: {in_bowl_count[0]}/{num_particles} "
+              f"(need {min_count}), cup_on_table: {cup_on_table[0]}")
+
+        return success
+
+    success_cup1 = count_in_bowl(particle_cfg, pouring_cup_cfg)
+    success_cup2 = count_in_bowl(particle_cfg_2, pouring_cup_cfg_2)
+    if required_both:
+        return success_cup1 & success_cup2
+    else:
+        # Either cup successfully poured = success
+        return success_cup1 | success_cup2
 
 
 
-# def task_done_nut_pour(
-#     env: ManagerBasedRLEnv,
-#     sorting_scale_cfg: SceneEntityCfg = SceneEntityCfg("sorting_scale"),
-#     sorting_bowl_cfg: SceneEntityCfg = SceneEntityCfg("sorting_bowl"),
-#     sorting_beaker_cfg: SceneEntityCfg = SceneEntityCfg("sorting_beaker"),
-#     factory_nut_cfg: SceneEntityCfg = SceneEntityCfg("factory_nut"),
-#     sorting_bin_cfg: SceneEntityCfg = SceneEntityCfg("black_sorting_bin"),
-#     max_bowl_to_scale_x: float = 0.055,
-#     max_bowl_to_scale_y: float = 0.055,
-#     max_bowl_to_scale_z: float = 0.025,
-#     max_nut_to_bowl_x: float = 0.050,
-#     max_nut_to_bowl_y: float = 0.050,
-#     max_nut_to_bowl_z: float = 0.019,
-#     max_beaker_to_bin_x: float = 0.08,
-#     max_beaker_to_bin_y: float = 0.12,
-#     max_beaker_to_bin_z: float = 0.07,
-# ) -> torch.Tensor:
-#     """Determine if the nut pouring task is complete.
-
-#     This function checks whether all success conditions for the task have been met:
-#     1. The factory nut is in the sorting bowl
-#     2. The sorting beaker is in the sorting bin
-#     3. The sorting bowl is placed on the sorting scale
-
-#     Args:
-#         env: The RL environment instance.
-#         sorting_scale_cfg: Configuration for the sorting scale entity.
-#         sorting_bowl_cfg: Configuration for the sorting bowl entity.
-#         sorting_beaker_cfg: Configuration for the sorting beaker entity.
-#         factory_nut_cfg: Configuration for the factory nut entity.
-#         sorting_bin_cfg: Configuration for the sorting bin entity.
-#         max_bowl_to_scale_x: Maximum x position of the sorting bowl relative to the sorting scale for task completion.
-#         max_bowl_to_scale_y: Maximum y position of the sorting bowl relative to the sorting scale for task completion.
-#         max_bowl_to_scale_z: Maximum z position of the sorting bowl relative to the sorting scale for task completion.
-#         max_nut_to_bowl_x: Maximum x position of the factory nut relative to the sorting bowl for task completion.
-#         max_nut_to_bowl_y: Maximum y position of the factory nut relative to the sorting bowl for task completion.
-#         max_nut_to_bowl_z: Maximum z position of the factory nut relative to the sorting bowl for task completion.
-#         max_beaker_to_bin_x: Maximum x position of the sorting beaker relative to the sorting bin for task completion.
-#         max_beaker_to_bin_y: Maximum y position of the sorting beaker relative to the sorting bin for task completion.
-#         max_beaker_to_bin_z: Maximum z position of the sorting beaker relative to the sorting bin for task completion.
-
-#     Returns:
-#         Boolean tensor indicating which environments have completed the task.
-#     """
-#     # Get object entities from the scene
-#     sorting_scale: RigidObject = env.scene[sorting_scale_cfg.name]
-#     sorting_bowl: RigidObject = env.scene[sorting_bowl_cfg.name]
-#     factory_nut: RigidObject = env.scene[factory_nut_cfg.name]
-#     sorting_beaker: RigidObject = env.scene[sorting_beaker_cfg.name]
-#     sorting_bin: RigidObject = env.scene[sorting_bin_cfg.name]
-
-#     # Get positions relative to environment origin
-#     scale_pos = sorting_scale.data.root_pos_w - env.scene.env_origins
-#     bowl_pos = sorting_bowl.data.root_pos_w - env.scene.env_origins
-#     sorting_beaker_pos = sorting_beaker.data.root_pos_w - env.scene.env_origins
-#     nut_pos = factory_nut.data.root_pos_w - env.scene.env_origins
-#     bin_pos = sorting_bin.data.root_pos_w - env.scene.env_origins
-
-#     # nut to bowl
-#     nut_to_bowl_x = torch.abs(nut_pos[:, 0] - bowl_pos[:, 0])
-#     nut_to_bowl_y = torch.abs(nut_pos[:, 1] - bowl_pos[:, 1])
-#     nut_to_bowl_z = nut_pos[:, 2] - bowl_pos[:, 2]
-
-#     # bowl to scale
-#     bowl_to_scale_x = torch.abs(bowl_pos[:, 0] - scale_pos[:, 0])
-#     bowl_to_scale_y = torch.abs(bowl_pos[:, 1] - scale_pos[:, 1])
-#     bowl_to_scale_z = bowl_pos[:, 2] - scale_pos[:, 2]
-
-#     # beaker to bin
-#     beaker_to_bin_x = torch.abs(sorting_beaker_pos[:, 0] - bin_pos[:, 0])
-#     beaker_to_bin_y = torch.abs(sorting_beaker_pos[:, 1] - bin_pos[:, 1])
-#     beaker_to_bin_z = sorting_beaker_pos[:, 2] - bin_pos[:, 2]
-
-#     done = nut_to_bowl_x < max_nut_to_bowl_x
-#     done = torch.logical_and(done, nut_to_bowl_y < max_nut_to_bowl_y)
-#     done = torch.logical_and(done, nut_to_bowl_z < max_nut_to_bowl_z)
-#     done = torch.logical_and(done, bowl_to_scale_x < max_bowl_to_scale_x)
-#     done = torch.logical_and(done, bowl_to_scale_y < max_bowl_to_scale_y)
-#     done = torch.logical_and(done, bowl_to_scale_z < max_bowl_to_scale_z)
-#     done = torch.logical_and(done, beaker_to_bin_x < max_beaker_to_bin_x)
-#     done = torch.logical_and(done, beaker_to_bin_y < max_beaker_to_bin_y)
-#     done = torch.logical_and(done, beaker_to_bin_z < max_beaker_to_bin_z)
-
-#     return done
 
 
 def task_done_exhaust_pipe(

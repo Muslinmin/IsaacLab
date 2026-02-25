@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import tempfile
+from IsaacLab.source.isaaclab_tasks.isaaclab_tasks.manager_based.manipulation.pick_place.mdp.terminations import liquid_particle_pour_success
 import torch
 from dataclasses import MISSING
 
@@ -771,19 +772,14 @@ class TerminationsCfg:
         },
     )
 
-    # success = DoneTerm(
-    #     func=mdp.liquid_particle_pour_success,
-    #     params={
-    #         "particle_cfg": SceneEntityCfg("liquid_particles_2"),
-    #         "bowl_cfg": SceneEntityCfg("bowl"),
-    #         "pouring_cup_cfg": SceneEntityCfg("pouring_cup_2"),
-    #         "min_in_bowl_count": 10,      # adjust: how many in bowl = success
-    #         "bowl_xy_radius": 0.06,
-    #         "bowl_z_below_rim": 0.12,
-    #         "cup_z_threshold": 1.05,
-    #         "particle_vel_threshold": 0.05,
-    #     },
-    # )
+    success = DoneTerm(
+        func=mdp.liquid_particle_pour_success,
+        params={
+            "require_both": False,  # Set to True for dual hand pour
+        },
+    )
+
+
 
 
 @configclass
