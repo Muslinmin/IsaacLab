@@ -501,7 +501,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     bowl = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Bowl",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[0.00492, 0.4432, 0.99078],
+            pos=[0.00492, 0.4432, 1.00578],
         ),
         spawn=UsdFileCfg(
             usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/bowl.usd",
@@ -514,7 +514,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     pouring_cup = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/PouringCup",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-0.19842, 0.45059, 0.98921],
+            pos=[-0.19842, 0.45059, 1.00421],
             rot=[0.7071068, 0.7071068, 0.0, 0.0],  # 90 deg around X
         ),
         spawn=UsdFileCfg(
@@ -526,7 +526,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     pouring_cup_2 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/PouringCup_2",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[0.19994, 0.42043, 0.99124],
+            pos=[0.19994, 0.42043, 1.00624],
             rot=[0.7071068, 0.7071068, 0.0, 0.0],  # 90 deg around X
         ),
         spawn=UsdFileCfg(
