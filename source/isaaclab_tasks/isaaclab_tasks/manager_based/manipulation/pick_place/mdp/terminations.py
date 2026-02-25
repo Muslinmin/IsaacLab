@@ -161,7 +161,7 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 
-DEBUG_SUCCESS = True
+DEBUG_SUCCESS = False
 
 def _dbg_s(msg: str):
     if DEBUG_SUCCESS:
