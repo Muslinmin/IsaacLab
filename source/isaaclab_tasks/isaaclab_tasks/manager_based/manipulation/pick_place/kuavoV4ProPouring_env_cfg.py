@@ -92,11 +92,16 @@ def _build_liquid_particle_collection(
                 spawn=sim_utils.SphereCfg(
                     radius=0.005,
                     rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                        linear_damping=0.1,
-                        angular_damping=0.2,
+                        linear_damping=5.0,
+                        angular_damping=2.0,
                     ),
                     mass_props=sim_utils.MassPropertiesCfg(mass=0.001),
                     collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.002),
+                    physics_material=sim_utils.RigidBodyMaterialCfg(
+                        restitution=0.0,        # no bounce
+                        static_friction=0.3,
+                        dynamic_friction=0.2,
+                    ),
                     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=color),
                 ),
             )
@@ -750,8 +755,8 @@ class TerminationsCfg:
     particle_spilled = DoneTerm(
         func=mdp.liquid_particle_spilled,
         params={
-            "particle_cfg": SceneEntityCfg("liquid_particles_2"),
-            "cup_cfg": SceneEntityCfg("pouring_cup_2"),
+            "particle_cfg": SceneEntityCfg("liquid_particles"),
+            "cup_cfg": SceneEntityCfg("pouring_cup"),
             "min_spilled_count": 5,
             "cup_xy_radius": 0.05,
             "fell_off_z": 0.50,
