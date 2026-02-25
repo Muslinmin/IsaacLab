@@ -122,9 +122,9 @@ def kuavoV4Pouring_cup_tilted_sideways(
     ang_speed = torch.norm(cup.data.root_ang_vel_w, dim=-1)
     cup_is_still = ang_speed < max_cup_ang_speed_for_failure
 
-    print(f"[{asset_cfg.name}] cup_rel_z: {cup_height_above_table[0]:.4f}, tilt_deg: {torch.rad2deg(tilt_angle[0]):.2f}, "
-        f"cup_is_low: {cup_is_low[0]}, cup_is_fallen: {cup_is_fallen[0]}, "
-        f"cup_is_still: {cup_is_still[0]}, past_grace: {past_grace[0]}")
+    # print(f"[{asset_cfg.name}] cup_rel_z: {cup_height_above_table[0]:.4f}, tilt_deg: {torch.rad2deg(tilt_angle[0]):.2f}, "
+    #     f"cup_is_low: {cup_is_low[0]}, cup_is_fallen: {cup_is_fallen[0]}, "
+    #     f"cup_is_still: {cup_is_still[0]}, past_grace: {past_grace[0]}")
 
     return past_grace & cup_is_low & cup_is_fallen
 
@@ -132,47 +132,46 @@ def kuavoV4Pouring_cup_tilted_sideways(
 def liquid_particle_spilled(
     env: ManagerBasedRLEnv,
     particle_cfg: SceneEntityCfg = SceneEntityCfg("liquid_particles"),
-    table_cfg: SceneEntityCfg = SceneEntityCfg("table"),
+    cup_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup_2"),
+    bowl_cfg: SceneEntityCfg = SceneEntityCfg("bowl"),
     min_spilled_count: int = 5,
-    surface_band_min: float = -0.01,
-    surface_band_max: float = 0.05,
-    vel_threshold: float = 0.05,
+    cup_xy_radius: float = 0.05,
+    bowl_xy_radius: float = 0.08,   # tune to your bowl size
     fell_off_z: float = 0.50,
-    table_root_to_surface: float = 0.85,
+    grace_period_steps: int = 30,
 ) -> torch.Tensor:
+
     particles: RigidObjectCollection = env.scene[particle_cfg.name]
+    cup: RigidObject = env.scene[cup_cfg.name]
+    bowl: RigidObject = env.scene[bowl_cfg.name]
 
-    # Cache table surface Z
-    if not hasattr(env, "_table_surface_z_cache"):
-        table_entity = env.scene[table_cfg.name]
-        table_positions, _ = table_entity.get_world_poses()  # (num_envs, 3)
-        env._table_surface_z_cache = (
-            (table_positions[:, 2] + table_root_to_surface).unsqueeze(1).clone()
-        )  # (num_envs, 1)
+    past_grace = env.episode_length_buf >= grace_period_steps
 
-    table_surface_z = env._table_surface_z_cache
+    p_pos = particles.data.object_pos_w       # (num_envs, 24, 3)
 
-    p_pos = particles.data.object_pos_w      # (num_envs, 24, 3)
-    p_vel = particles.data.object_lin_vel_w  # (num_envs, 24, 3)
+    # XY distance from cup
+    cup_xy = cup.data.root_pos_w[:, :2].unsqueeze(1)
+    xy_dist_cup = torch.norm(p_pos[..., :2] - cup_xy, dim=-1)
+    outside_cup = xy_dist_cup > cup_xy_radius
 
-    p_z = p_pos[..., 2]                      # (num_envs, 24)
-    p_speed = torch.norm(p_vel, dim=-1)      # (num_envs, 24)
+    # XY distance from bowl
+    bowl_xy = bowl.data.root_pos_w[:, :2].unsqueeze(1)
+    xy_dist_bowl = torch.norm(p_pos[..., :2] - bowl_xy, dim=-1)
+    outside_bowl = xy_dist_bowl > bowl_xy_radius
 
-    p_rel_z = p_z - table_surface_z          # (num_envs, 24)
-
-    on_table = (
-        (p_rel_z > surface_band_min)
-        & (p_rel_z < surface_band_max)
-        & (p_speed < vel_threshold)
-    )
-
+    # Fell off table entirely
+    p_z = p_pos[..., 2]
     fell_off = p_z < fell_off_z
 
-    spill_count = (on_table | fell_off).sum(dim=1)
+    # Spilled = outside cup AND outside bowl, or fell off table
+    spill_count = ((outside_cup & outside_bowl) | fell_off).sum(dim=1)
 
-    print(f"[spill] count: {spill_count[0]}, p_rel_z min: {p_rel_z[0].min():.4f} max: {p_rel_z[0].max():.4f}")
+    print(f"[spill] count: {spill_count[0]}, "
+          f"xy_cup min: {xy_dist_cup[0].min():.4f} max: {xy_dist_cup[0].max():.4f}, "
+          f"xy_bowl min: {xy_dist_bowl[0].min():.4f} max: {xy_dist_bowl[0].max():.4f}, "
+          f"past_grace: {past_grace[0]}")
 
-    return spill_count >= min_spilled_count
+    return past_grace & (spill_count >= min_spilled_count)
 
 
 

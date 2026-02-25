@@ -737,19 +737,17 @@ class TerminationsCfg:
     )
 
 
-    # particle_spilled = DoneTerm(
-    #     func=mdp.liquid_particle_spilled,
-    #     params={
-    #         "particle_cfg": SceneEntityCfg("liquid_particles"),
-    #         "table_cfg": SceneEntityCfg("table"),
-    #         "min_spilled_count": 5,
-    #         "surface_band_min": -0.01,
-    #         "surface_band_max": 0.05,
-    #         "vel_threshold": 0.05,
-    #         "fell_off_z": 0.50,
-    #         "table_root_to_surface": 0.85,
-    #     },
-    # )
+    particle_spilled = DoneTerm(
+        func=mdp.liquid_particle_spilled,
+        params={
+            "particle_cfg": SceneEntityCfg("liquid_particles"),
+            "cup_cfg": SceneEntityCfg("pouring_cup_2"),
+            "min_spilled_count": 5,
+            "cup_xy_radius": 0.05,
+            "fell_off_z": 0.50,
+            "grace_period_steps": 30,
+        },
+    )
 
     success = DoneTerm(func=mdp.task_done_nut_pour)
     # success = DoneTerm(
