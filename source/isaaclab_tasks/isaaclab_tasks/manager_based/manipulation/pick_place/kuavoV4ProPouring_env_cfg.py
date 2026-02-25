@@ -67,6 +67,7 @@ def _build_liquid_particle_collection(
     color: tuple[float, float, float] = (0.2, 0.8, 0.2),
     origin: tuple[float, float, float] = (_PX, _PY, _PZ),
     prefix: str = "liq",
+    num_layers: int = 6,
 ) -> RigidObjectCollectionCfg:
     px, py, pz = origin
     grid = [
@@ -77,7 +78,7 @@ def _build_liquid_particle_collection(
     ]
     rigid_objects = {}
     idx = 0
-    for layer in range(6):
+    for layer in range(num_layers):
         z_off = layer * _LAYER_SP
         for dx, dy in grid:
             name = f"{prefix}_sphere_{idx:02d}"
@@ -105,6 +106,7 @@ _LIQUID_PARTICLES_CFG = _build_liquid_particle_collection(
     color=(0.2, 0.8, 0.2),
     origin=(-0.19789, 0.46173, 1.03684),
     prefix="left",
+    num_layers=12,
 )
 
 # Right cup (pink)
@@ -112,6 +114,7 @@ _LIQUID_PARTICLES_CFG_2 = _build_liquid_particle_collection(
     color=(1.0, 0.753, 0.796),
     origin=(0.20093, 0.43066, 1.0694),
     prefix="right",
+    num_layers=12,
 )
 
 

@@ -135,18 +135,23 @@ def liquid_particle_spilled(
     bowl_cfg: SceneEntityCfg = SceneEntityCfg("bowl"),
     min_spilled_count: int = 5,
     cup_xy_radius: float = 0.05,
-    bowl_xy_radius: float = 0.08,   # tune to your bowl size
+    bowl_xy_radius: float = 0.08,
     fell_off_z: float = 0.50,
     grace_period_steps: int = 30,
+    bowl_rim_offset: float = 0.10,  # tune: height above bowl root to its rim
 ) -> torch.Tensor:
-
     particles: RigidObjectCollection = env.scene[particle_cfg.name]
     cup: RigidObject = env.scene[cup_cfg.name]
     bowl: RigidObject = env.scene[bowl_cfg.name]
 
     past_grace = env.episode_length_buf >= grace_period_steps
 
-    p_pos = particles.data.object_pos_w       # (num_envs, 24, 3)
+    # Recompute bowl rim Z each episode — handles table height randomization
+    if env.episode_length_buf[0] == 0 or not hasattr(env, "_bowl_rim_z"):
+        env._bowl_rim_z = (bowl.data.root_pos_w[:, 2] + bowl_rim_offset).clone()  # (num_envs,)
+
+    p_pos = particles.data.object_pos_w  # (num_envs, 24, 3)
+    p_z = p_pos[..., 2]                  # (num_envs, 24)
 
     # XY distance from cup
     cup_xy = cup.data.root_pos_w[:, :2].unsqueeze(1)
@@ -158,17 +163,19 @@ def liquid_particle_spilled(
     xy_dist_bowl = torch.norm(p_pos[..., :2] - bowl_xy, dim=-1)
     outside_bowl = xy_dist_bowl > bowl_xy_radius
 
+    # Below bowl rim — particle has landed, not mid-air during pour
+    below_rim = p_z < env._bowl_rim_z.unsqueeze(1)  # (num_envs, 24)
+
     # Fell off table entirely
-    p_z = p_pos[..., 2]
     fell_off = p_z < fell_off_z
 
-    # Spilled = outside cup AND outside bowl, or fell off table
-    spill_count = ((outside_cup & outside_bowl) | fell_off).sum(dim=1)
+    # Spilled = outside cup AND outside bowl AND landed (below rim), or fell off
+    spill_count = ((outside_cup & outside_bowl & below_rim) | fell_off).sum(dim=1)
 
-    # print(f"[spill] count: {spill_count[0]}, "
-    #       f"xy_cup min: {xy_dist_cup[0].min():.4f} max: {xy_dist_cup[0].max():.4f}, "
-    #       f"xy_bowl min: {xy_dist_bowl[0].min():.4f} max: {xy_dist_bowl[0].max():.4f}, "
-    #       f"past_grace: {past_grace[0]}")
+    print(f"[spill] count: {spill_count[0]}, "
+          f"xy_cup min: {xy_dist_cup[0].min():.4f} max: {xy_dist_cup[0].max():.4f}, "
+          f"xy_bowl min: {xy_dist_bowl[0].min():.4f} max: {xy_dist_bowl[0].max():.4f}, "
+          f"past_grace: {past_grace[0]}")
 
     return past_grace & (spill_count >= min_spilled_count)
 
