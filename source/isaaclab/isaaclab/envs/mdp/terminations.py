@@ -77,36 +77,48 @@ def root_height_below_minimum(
 def kuavoV4Pouring_cup_tilted_sideways(
     env,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup"),
-    # height gate in WORLD frame (cheap proxy for “on/near table”)
-    max_height_for_contact: float = 1.10,
-    # sideways if cup’s up-vector is too far from world up
-    # upright: dot ~ 1, sideways: dot ~ 0
-    min_up_dot: float = 0.25,
+    table_cfg: SceneEntityCfg = SceneEntityCfg("table"),
+    max_tilt_angle_rad: float = 1.2,
+    grace_period_steps: int = 15,
+    max_cup_ang_speed_for_failure: float = 0.1,
+    lift_height_above_table: float = 1.15,
 ) -> torch.Tensor:
-    """Failure if cup is low (near table) AND tilted sideways.
-
-    Uses up-vector alignment (robust vs Euler angle issues).
-    - touching gate uses world Z height (not true contact).
-    - sideways uses dot(up_world, [0,0,1]) < min_up_dot.
-    """
     cup: RigidObject = env.scene[asset_cfg.name]
 
-    # Gate: near table (WORLD frame Z). Use a value near your table/cup resting height.
-    touching = cup.data.root_pos_w[:, 2] < max_height_for_contact
+    past_grace = env.episode_length_buf >= grace_period_steps
 
-    # Quaternion (w, x, y, z)
-    q = cup.data.root_quat_w
-    w, x, y, z = q[:, 0], q[:, 1], q[:, 2], q[:, 3]
+    # Table is a static XformPrim — get Z from its scene entity positions
+    table_entity = env.scene[table_cfg.name]
+    # XformPrimView exposes positions via get_world_poses()
+    table_positions, _ = table_entity.get_world_poses()   # (num_envs, 3)
+    table_z = table_positions[:, 2]                        # (num_envs,)
 
-    # Rotate local Z axis (0,0,1) by quaternion -> up vector in world
-    # Using the rotation matrix element R33-ish:
-    # up_world_z = 1 - 2*(x^2 + y^2)
-    up_world_z = 1.0 - 2.0 * (x * x + y * y)
+    cup_z = cup.data.root_pos_w[:, 2]
+    cup_height_above_table = cup_z - table_z
+    cup_is_low = cup_height_above_table < lift_height_above_table
 
-    # sideways if cup's up vector has low alignment with world up
-    sideways = up_world_z < min_up_dot
+    # Tilt from spawn orientation
+    q_current = cup.data.root_quat_w
+    q_ref = torch.tensor(
+        [0.7071068, 0.7071068, 0.0, 0.0],
+        device=q_current.device, dtype=q_current.dtype
+    ).unsqueeze(0).expand(q_current.shape[0], -1)
 
-    return torch.logical_and(touching, sideways)
+    q_ref_inv = q_ref * torch.tensor([1, -1, -1, -1], device=q_current.device, dtype=q_current.dtype)
+    w0, x0, y0, z0 = q_ref_inv[:, 0], q_ref_inv[:, 1], q_ref_inv[:, 2], q_ref_inv[:, 3]
+    w1, x1, y1, z1 = q_current[:, 0], q_current[:, 1], q_current[:, 2], q_current[:, 3]
+    rel_w = torch.clamp(w0*w1 - x0*x1 - y0*y1 - z0*z1, -1.0, 1.0)
+    tilt_angle = 2.0 * torch.acos(torch.abs(rel_w))
+    cup_is_fallen = tilt_angle > max_tilt_angle_rad
+
+    ang_speed = torch.norm(cup.data.root_ang_vel_w, dim=-1)
+    cup_is_still = ang_speed < max_cup_ang_speed_for_failure
+
+    print(f"cup_rel_z: {cup_height_above_table[0]:.4f}, tilt_deg: {torch.rad2deg(tilt_angle[0]):.2f}, "
+          f"cup_is_low: {cup_is_low[0]}, cup_is_fallen: {cup_is_fallen[0]}, "
+          f"cup_is_still: {cup_is_still[0]}, past_grace: {past_grace[0]}")
+
+    return past_grace & cup_is_low & cup_is_fallen & cup_is_still
 
 
 def liquid_particle_spilled(

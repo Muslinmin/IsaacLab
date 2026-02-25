@@ -295,6 +295,7 @@ def create_environment_config(
         "cup_dropped",
         "factory_nut_dropped",
         "cup_tilted_sideways",
+        "cup_2_tilted_sideways",
     ]
     failure_terms = {}
     for name in FAILURE_TERM_NAMES:

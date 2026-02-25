@@ -722,21 +722,25 @@ class TerminationsCfg:
         },
     )
 
-    cup_tilted_sideways = DoneTerm(
+    cup_tilted_sideways=DoneTerm(
         func=mdp.kuavoV4Pouring_cup_tilted_sideways,
         params={
             "asset_cfg": SceneEntityCfg("pouring_cup"),
-            "max_height_for_contact": 1.09,
-            "min_up_dot": 0.25,
-        },
+            "max_tilt_angle_rad": 1.2,
+            "grace_period_steps": 15,
+            "max_cup_ang_speed_for_failure": 0.1,
+            "lift_height_above_table": 1.08,
+        }
     )
 
-    cup_tilted_sideways = DoneTerm(
+    cup_2_tilted_sideways = DoneTerm(
         func=mdp.kuavoV4Pouring_cup_tilted_sideways,
         params={
             "asset_cfg": SceneEntityCfg("pouring_cup_2"),
-            "max_height_for_contact": 1.09,
-            "min_up_dot": 0.25,
+            "max_tilt_angle_rad": 1.2,
+            "grace_period_steps": 15,
+            "max_cup_ang_speed_for_failure": 0.1,
+            "lift_height_above_table": 1.08,
         },
     )
 
