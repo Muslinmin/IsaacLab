@@ -155,7 +155,7 @@ def liquid_particle_pour_success(
     cup_lift_threshold: float = 1.05,
     cup_vz_threshold: float = 0.05,
     particle_vel_threshold: float = 0.05,
-    required_both: bool = False
+    require_both: bool = False
 ) -> torch.Tensor:
 
     bowl: RigidObject = env.scene[bowl_cfg.name]
@@ -205,14 +205,14 @@ def liquid_particle_pour_success(
         min_count = int(num_particles * success_ratio)
         success = (in_bowl_count >= min_count) & cup_on_table
 
-        print(f"[success:{particle_cfg_local.name}] in_bowl: {in_bowl_count[0]}/{num_particles} "
-              f"(need {min_count}), cup_on_table: {cup_on_table[0]}")
+        # print(f"[success:{particle_cfg_local.name}] in_bowl: {in_bowl_count[0]}/{num_particles} "
+        #       f"(need {min_count}), cup_on_table: {cup_on_table[0]}")
 
         return success
 
     success_cup1 = count_in_bowl(particle_cfg, pouring_cup_cfg)
     success_cup2 = count_in_bowl(particle_cfg_2, pouring_cup_cfg_2)
-    if required_both:
+    if require_both:
         return success_cup1 & success_cup2
     else:
         # Either cup successfully poured = success

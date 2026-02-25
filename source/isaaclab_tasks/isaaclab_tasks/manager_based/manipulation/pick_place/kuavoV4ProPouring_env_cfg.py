@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import tempfile
-from IsaacLab.source.isaaclab_tasks.isaaclab_tasks.manager_based.manipulation.pick_place.mdp.terminations import liquid_particle_pour_success
+
 import torch
 from dataclasses import MISSING
 

@@ -172,10 +172,10 @@ def liquid_particle_spilled(
     # Spilled = outside cup AND outside bowl AND landed (below rim), or fell off
     spill_count = ((outside_cup & outside_bowl & below_rim) | fell_off).sum(dim=1)
 
-    print(f"[spill] count: {spill_count[0]}, "
-          f"xy_cup min: {xy_dist_cup[0].min():.4f} max: {xy_dist_cup[0].max():.4f}, "
-          f"xy_bowl min: {xy_dist_bowl[0].min():.4f} max: {xy_dist_bowl[0].max():.4f}, "
-          f"past_grace: {past_grace[0]}")
+    # print(f"[spill] count: {spill_count[0]}, "
+    #       f"xy_cup min: {xy_dist_cup[0].min():.4f} max: {xy_dist_cup[0].max():.4f}, "
+    #       f"xy_bowl min: {xy_dist_bowl[0].min():.4f} max: {xy_dist_bowl[0].max():.4f}, "
+    #       f"past_grace: {past_grace[0]}")
 
     return past_grace & (spill_count >= min_spilled_count)
 
