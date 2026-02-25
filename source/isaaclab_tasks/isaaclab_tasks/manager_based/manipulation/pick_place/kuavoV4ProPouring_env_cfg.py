@@ -117,13 +117,18 @@ _LIQUID_PARTICLES_CFG = _build_liquid_particle_collection(
 )
 
 # Right cup (red particles)
+# _LIQUID_PARTICLES_CFG_2 = _build_liquid_particle_collection(
+#     color=(0.102, 0.026, 0.147),
+#     origin=(0.102, 0.013, 0.013),
+#     prefix="right",
+#     num_layers=12,
+# )
 _LIQUID_PARTICLES_CFG_2 = _build_liquid_particle_collection(
     color=(0.102, 0.026, 0.147),
-    origin=(0.102, 0.013, 0.013),
+    origin=(0.19994, 0.43173, 1.03884),  # ← matches cup 2 XY + similar Z offset
     prefix="right",
     num_layers=12,
 )
-
 
 # ---------------------------
 # Finger joint gain tuning code here
@@ -800,24 +805,17 @@ class EventCfg:
 
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
 
-    set_factory_nut_mass = EventTerm(
-        func=mdp.randomize_rigid_body_mass,
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("factory_nut"),
-            "mass_distribution_params": (0.2, 0.2),
-            "operation": "abs",
-        },
-    )
-
     reset_object = EventTerm(
-        func=mdp.reset_object_poses_nut_pour,
+        func=mdp.reset_liquid_pour_poses,
         mode="reset",
         params={
-            "pose_range": {
-                "x": [-0.01, 0.01],
-                "y": [-0.01, 0.01],
+            "xy_range": {
+                "x": [-0.04, 0.04],
+                "y": [-0.04, 0.04],
             },
+            "table_z_range": (-0.03, 0.03),   # table height -2cm to +3cm
+            "yaw_range": (0, 0),        # ~±8.6 degrees yaw
+            "min_distance": 0.12,              # 12cm minimum between objects
         },
     )
 
