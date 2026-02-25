@@ -58,6 +58,7 @@ from pxr import PhysxSchema, UsdPhysics
 # ============================================================================
 from isaaclab.assets import RigidObjectCollectionCfg
 
+
 _PX, _PY, _PZ = 0.20093, 0.43066, 1.0694
 
 # 2×2 grid spacing and z-layer spacing (meters)
@@ -92,33 +93,33 @@ def _build_liquid_particle_collection(
                 spawn=sim_utils.SphereCfg(
                     radius=0.005,
                     rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                        linear_damping=5.0,
-                        angular_damping=2.0,
+                        linear_damping=7.0,
+                        angular_damping=4.0,
                     ),
                     mass_props=sim_utils.MassPropertiesCfg(mass=0.001),
                     collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.002),
                     physics_material=sim_utils.RigidBodyMaterialCfg(
                         restitution=0.0,        # no bounce
                         static_friction=0.3,
-                        dynamic_friction=0.2,
+                        dynamic_friction=0.5,
                     ),
                     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=color),
                 ),
             )
             idx += 1
     return RigidObjectCollectionCfg(rigid_objects=rigid_objects)
-# Left cup (green)
+# Left cup (green particles)
 _LIQUID_PARTICLES_CFG = _build_liquid_particle_collection(
-    color=(0.2, 0.8, 0.2),
+    color=(0.013, 0.102, 0.026),
     origin=(-0.19789, 0.46173, 1.03684),
     prefix="left",
     num_layers=12,
 )
 
-# Right cup (pink)
+# Right cup (red particles)
 _LIQUID_PARTICLES_CFG_2 = _build_liquid_particle_collection(
-    color=(1.0, 0.753, 0.796),
-    origin=(0.20093, 0.43066, 1.0694),
+    color=(0.102, 0.026, 0.147),
+    origin=(0.102, 0.013, 0.013),
     prefix="right",
     num_layers=12,
 )
@@ -474,6 +475,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     )
 
     ################################################## NON-ROBOTIC ASSETS ##################################################
+
     table = AssetBaseCfg(
         prim_path="/World/envs/env_.*/Table",
         init_state=AssetBaseCfg.InitialStateCfg(pos=[0.0, 0.55, 0.0], rot=[1.0, 0.0, 0.0, 0.0]),
@@ -481,6 +483,11 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
             usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/table.usd",
             scale=(1.0, 1.0, 1.3),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(
+                diffuse_color=(0.0908, 0.0343, 0.0242),
+                roughness=0.7,
+                metallic=0.0,
+            ),
         ),
     )
 
