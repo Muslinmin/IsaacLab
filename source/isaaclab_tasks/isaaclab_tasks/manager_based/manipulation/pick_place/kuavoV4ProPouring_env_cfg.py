@@ -720,7 +720,7 @@ class TerminationsCfg:
             "asset_cfg": SceneEntityCfg("pouring_cup"),
             "max_tilt_angle_rad": 1.2,
             "grace_period_steps": 15,
-            "max_cup_ang_speed_for_failure": 0.2,
+            "max_cup_ang_speed_for_failure": 0.17,
             "lift_height_above_table": 1.08,
         }
     )
@@ -731,7 +731,7 @@ class TerminationsCfg:
             "asset_cfg": SceneEntityCfg("pouring_cup_2"),
             "max_tilt_angle_rad": 1.2,
             "grace_period_steps": 15,
-            "max_cup_ang_speed_for_failure": 0.2,
+            "max_cup_ang_speed_for_failure": 0.17,
             "lift_height_above_table": 1.08,
         },
     )
