@@ -484,27 +484,27 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         ),
     )
 
-
     pouring_cup = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/PouringCup",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-0.26724, 0.39094, 0.98921],
+            pos=[-0.19842, 0.45059, 0.98921],
+            rot=[0.7071068, 0.7071068, 0.0, 0.0],  # 90 deg around X
         ),
         spawn=UsdFileCfg(
-            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/barrel_cup.usd",
-            scale=(0.0006, 0.0006, 0.001),
+            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/cup_1.usd",
+            scale=(0.0006, 0.0005, 0.0006),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
-
     pouring_cup_2 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/PouringCup_2",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[0.14321, 0.372, 0.99124],
+            pos=[0.19994, 0.42043, 0.99124],
+            rot=[0.7071068, 0.7071068, 0.0, 0.0],  # 90 deg around X
         ),
         spawn=UsdFileCfg(
-            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/barrel_cup_2.usd",
-            scale=(0.0006, 0.0006, 0.001),
+            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/cup_2.usd",
+            scale=(0.0006, 0.0005, 0.0006),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
