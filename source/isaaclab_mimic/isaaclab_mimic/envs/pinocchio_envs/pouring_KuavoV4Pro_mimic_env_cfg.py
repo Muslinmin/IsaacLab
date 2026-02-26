@@ -50,7 +50,7 @@ class PouringKuavoV4ProMimic_GenCfg(KuavoV4ProPouringPinkIKEnvCfg, MimicEnvCfg):
             )
         )
         
-        self.subtask_configs["right"] = subtask_configs
+        self.subtask_configs["left"] = subtask_configs
 
         subtask_configs = []
         subtask_configs.append(
@@ -116,11 +116,11 @@ class PouringKuavoV4ProMimic_GenCfg(KuavoV4ProPouringPinkIKEnvCfg, MimicEnvCfg):
             apply_noise_during_interpolation=False,
         ))
 
-        self.subtask_configs["left"] = subtask_configs
+        self.subtask_configs["right"] = subtask_configs
 
 
 
-
+@configclass
 class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, MimicEnvCfg):
 
     def __post_init__(self):
@@ -158,7 +158,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
             )
         )
         
-        self.subtask_configs["right"] = subtask_configs
+        self.subtask_configs["left"] = subtask_configs
 
         subtask_configs = []
         subtask_configs.append(
@@ -224,7 +224,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
             apply_noise_during_interpolation=False,
         ))
 
-        self.subtask_configs["left"] = subtask_configs
+        self.subtask_configs["right"] = subtask_configs
 
 
 
@@ -267,7 +267,7 @@ class PouringKuavoV4ProMimic_AnnotateEnvCfg(PourKuavoV4ProTeleopEnvCfg, MimicEnv
             )
         )
         
-        self.subtask_configs["right"] = subtask_configs
+        self.subtask_configs["left"] = subtask_configs
 
         subtask_configs = []
         subtask_configs.append(
@@ -335,4 +335,4 @@ class PouringKuavoV4ProMimic_AnnotateEnvCfg(PourKuavoV4ProTeleopEnvCfg, MimicEnv
         ))
 
 
-        self.subtask_configs["left"] = subtask_configs
+        self.subtask_configs["right"] = subtask_configs

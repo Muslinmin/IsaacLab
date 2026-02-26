@@ -20,7 +20,7 @@ parser.add_argument("--generation_num_trials", type=int, help="Number of demos t
 parser.add_argument(
     "--num_envs", type=int, default=1, help="Number of environments to instantiate for generating datasets."
 )
-parser.add_argument("--input_file", type=str, default=None, required=True, help="File path to the source dataset file.")
+parser.add_argument("--input_file", type=str, default="./datasets/dataset_annotated.hdf5", required=True, help="File path to the source dataset file.")
 parser.add_argument(
     "--output_file",
     type=str,

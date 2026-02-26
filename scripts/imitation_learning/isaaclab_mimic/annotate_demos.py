@@ -81,6 +81,9 @@ from isaaclab.utils.datasets import EpisodeData, HDF5DatasetFileHandler
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
 
+from scene_collection_patch import patch_scene_for_collections
+
+
 is_paused = False
 current_action_index = 0
 marked_subtask_action_indices = []
@@ -255,7 +258,7 @@ def main():
     print("TASK:", args_cli.task, type(args_cli.task))
     task_id = args_cli.task[0] if isinstance(args_cli.task, (list, tuple)) else args_cli.task
     env = gym.make(task_id, cfg=env_cfg).unwrapped
-
+    patch_scene_for_collections(env.scene)
     if not isinstance(env, ManagerBasedRLMimicEnv):
         raise ValueError("The environment should be derived from ManagerBasedRLMimicEnv")
 
@@ -385,7 +388,9 @@ def replay_episode(
     actions = episode.data["actions"]
     env.sim.reset()
     env.recorder_manager.reset()
+    env._skip_pose_randomization = True 
     env.reset_to(initial_state, None, is_relative=True)
+    env._skip_pose_randomization = False
     set_fourth_joints_to_90(env)
     first_action = True
     for action_index, action in enumerate(actions):

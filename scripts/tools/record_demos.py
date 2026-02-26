@@ -128,7 +128,7 @@ from isaaclab.devices import KuavoRosJointDevice, KuavoRosJointDeviceCfg
 #touched - for keyboard handling to stop/start or reset env - if needed
 from isaaclab.devices.keyboard import KuavoKeyboardDevice, KuavoKeyboardDeviceCfg
 
-
+from scene_collection_patch import patch_scene_for_collections
 
 import isaaclab_mimic.envs  # noqa: F401
 
@@ -1106,7 +1106,7 @@ def main() -> None:
 
     # # Create environment
     env = create_environment(env_cfg)
-    
+    patch_scene_for_collections(env.scene)
     # # Run simulation loop
     current_recorded_demo_count = run_simulation_loop(env, None, success_term, rate_limiter, failure_terms)
 

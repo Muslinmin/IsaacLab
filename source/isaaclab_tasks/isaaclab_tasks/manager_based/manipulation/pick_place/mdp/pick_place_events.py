@@ -162,9 +162,6 @@ if TYPE_CHECKING:
 
 
 
-# ┌──────────────────────────────────────────────────────────────────────┐
-# │  FLIP THIS TO True TO SEE ALL DEBUG OUTPUT                          │
-# └──────────────────────────────────────────────────────────────────────┘
 DEBUG = True
 
 
@@ -201,6 +198,19 @@ def reset_liquid_pour_poses(
     _dbg("=" * 70)
     _dbg("RESET TRIGGERED")
     _dbg(f"  env_ids: {env_ids.tolist()}")
+
+    # ── Skip randomization during replay/annotation ─────────────────────
+    # When annotate_demos.py (or generate_dataset.py) calls env.reset_to(),
+    # the scene is restored from the HDF5 recording. We must NOT randomize
+    # on top of that, or objects won't match the recorded trajectory.
+    #
+    # The calling script sets env._skip_pose_randomization = True before
+    # calling reset_to(), and clears it after.
+    if getattr(env, "_skip_pose_randomization", False):
+        _dbg("  ⏭️  SKIPPING randomization (_skip_pose_randomization=True)")
+        _dbg("=" * 70)
+        return
+
     _dbg(f"  xy_range: {xy_range}")
     _dbg(f"  table_z_range: {table_z_range}")
     _dbg(f"  yaw_range: {yaw_range}")
@@ -540,3 +550,37 @@ def _write_particle_collection_pose(
             p_z = default_states[i, :, 2]
             _dbg(f"    particles env[{env_ids[i].item()}]: "
                  f"{num_particles} spheres, z_min={p_z.min():.5f}, z_max={p_z.max():.5f}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Example EventCfg wiring
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# @configclass
+# class EventCfg:
+#     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
+#
+#     set_factory_nut_mass = EventTerm(
+#         func=mdp.randomize_rigid_body_mass,
+#         mode="startup",
+#         params={
+#             "asset_cfg": SceneEntityCfg("factory_nut"),
+#             "mass_distribution_params": (0.2, 0.2),
+#             "operation": "abs",
+#         },
+#     )
+#
+#     reset_object = EventTerm(
+#         func=mdp.reset_liquid_pour_poses,
+#         mode="reset",
+#         params={
+#             "xy_range": {
+#                 "x": [-0.04, 0.04],
+#                 "y": [-0.04, 0.04],
+#             },
+#             "table_z_range": (-0.02, 0.03),
+#             "yaw_range": (-0.15, 0.15),
+#             "min_distance": 0.12,
+#             "spawn_z_buffer": 0.005,
+#         },
+#     )
