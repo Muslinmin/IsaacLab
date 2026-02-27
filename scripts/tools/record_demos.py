@@ -44,11 +44,11 @@ parser.add_argument(
 
 
 parser.add_argument(
-    "--dataset_file", type=str, default="./datasets/dataset.hdf5", help="File path to export recorded demos."
+    "--dataset_file", type=str, default="./datasets/dataset_1.hdf5", help="File path to export recorded demos."
 )
-parser.add_argument("--step_hz", type=int, default=20, help="Environment stepping rate in Hz.")
+parser.add_argument("--step_hz", type=int, default=30, help="Environment stepping rate in Hz.")
 parser.add_argument(
-    "--num_demos", type=int, default=5, help="Number of demonstrations to record. Set to 0 for infinite."
+    "--num_demos", type=int, default=100, help="Number of demonstrations to record. Set to 0 for infinite."
 )
 parser.add_argument(
     "--num_success_steps",

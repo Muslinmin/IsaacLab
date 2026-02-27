@@ -501,7 +501,8 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     bowl = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Bowl",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[0.00492, 0.4432, 1.00578],
+            #pos=[0.00492, 0.4432, 1.00578],
+            pos=[0.00492, 0.4432, 1.00878],
         ),
         spawn=UsdFileCfg(
             usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/bowl.usd",
@@ -711,6 +712,79 @@ class ObservationsCfg:
     # observation groups
     policy: PolicyCfg = PolicyCfg()
 
+@configclass
+class TeleopObservationsCfg(ObservationsCfg):
+    """Observations for teleop — no wrist cameras."""
+
+    @configclass
+    class PolicyCfg(ObservationsCfg.PolicyCfg):
+        cam_leftwrist_rgb = None
+        cam_rightwrist_rgb = None
+
+    policy: PolicyCfg = PolicyCfg()
+
+@configclass
+class ObservationsGenerateCfg(ObservationsCfg):
+    """Observations for Cosmos generation — adds depth + seg to all cameras."""
+
+    @configclass
+    class PolicyCfg(ObservationsCfg.PolicyCfg):
+        """Extends base policy obs with depth and segmentation modalities."""
+
+        # --- Depth ---
+        cam_egoview_depth = ObsTerm(
+            func=base_mdp.image,
+            params={
+                "sensor_cfg": SceneEntityCfg("cam_egoview"),
+                "data_type": "distance_to_image_plane",
+                "normalize": False,
+            },
+        )
+        cam_leftwrist_depth = ObsTerm(
+            func=base_mdp.image,
+            params={
+                "sensor_cfg": SceneEntityCfg("cam_leftwristview"),
+                "data_type": "distance_to_image_plane",
+                "normalize": False,
+            },
+        )
+        cam_rightwrist_depth = ObsTerm(
+            func=base_mdp.image,
+            params={
+                "sensor_cfg": SceneEntityCfg("cam_rightwristview"),
+                "data_type": "distance_to_image_plane",
+                "normalize": False,
+            },
+        )
+
+        # --- Segmentation ---
+        cam_egoview_segmentation = ObsTerm(
+            func=base_mdp.image,
+            params={
+                "sensor_cfg": SceneEntityCfg("cam_egoview"),
+                "data_type": "semantic_segmentation",
+                "normalize": False,
+            },
+        )
+        cam_leftwrist_segmentation = ObsTerm(
+            func=base_mdp.image,
+            params={
+                "sensor_cfg": SceneEntityCfg("cam_leftwristview"),
+                "data_type": "semantic_segmentation",
+                "normalize": False,
+            },
+        )
+        cam_rightwrist_segmentation = ObsTerm(
+            func=base_mdp.image,
+            params={
+                "sensor_cfg": SceneEntityCfg("cam_rightwristview"),
+                "data_type": "semantic_segmentation",
+                "normalize": False,
+            },
+        )
+
+    policy: PolicyCfg = PolicyCfg()
+
 
 @configclass
 class TerminationsCfg:
@@ -814,7 +888,7 @@ class EventCfg:
                 "x": [-0.04, 0.04],
                 "y": [-0.04, 0.04],
             },
-            "table_z_range": (-0.03, 0.03),   # table height -2cm to +3cm
+            "table_z_range": (-0.03, 0.03),   # table height -3cm to +3cm
             "yaw_range": (0, 0),        # ~±8.6 degrees yaw
             "min_distance": 0.12,              # 12cm minimum between objects
         },
@@ -870,7 +944,7 @@ class PourKuavoV4ProGenerateBaseEnvCfg(PourKuavoV4ProBaseEnvCfg):
     scene: ObjectTableSceneGenerateCfg = ObjectTableSceneGenerateCfg(
         num_envs=1, env_spacing=2.5, replicate_physics=True
     )
-
+    observations: ObservationsGenerateCfg = ObservationsGenerateCfg()  #Including the record for depth and seg cameras
     def __post_init__(self):
         super().__post_init__()
         # All 3 cameras active for Cosmos export
@@ -882,7 +956,7 @@ class PourKuavoV4ProTeleopEnvCfg(PourKuavoV4ProBaseEnvCfg):
     """For teleoperation - uses joint position actions."""
     
     actions: ActionsCfg = ActionsCfg()
-
+    observations: TeleopObservationsCfg = TeleopObservationsCfg()
     def __post_init__(self):
         super().__post_init__()  # Gets decimation, episode_length_s, etc. from base
         
@@ -903,3 +977,8 @@ class PourKuavoV4ProTeleopEnvCfg(PourKuavoV4ProBaseEnvCfg):
                 *hand_idle,
                 *hand_idle,
             ], device=self.sim.device)
+        
+        # Disable wrist cameras during teleop to maintain 20 Hz
+        self.scene.cam_leftwristview = None
+        self.scene.cam_rightwristview = None
+        self.image_obs_list = ["cam_egoview"]

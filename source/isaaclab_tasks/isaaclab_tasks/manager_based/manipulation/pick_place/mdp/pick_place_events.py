@@ -162,7 +162,7 @@ if TYPE_CHECKING:
 
 
 
-DEBUG = True
+DEBUG = False
 
 
 def _dbg(msg: str):

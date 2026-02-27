@@ -38,7 +38,7 @@ class PouringKuavoV4ProMimic_GenCfg(KuavoV4ProPouringPinkIKEnvCfg, MimicEnvCfg):
         subtask_configs = []
         subtask_configs.append(
             SubTaskConfig(
-            object_ref="pouring_cup",          # idle_right
+            object_ref="pouring_cup",          
             subtask_term_signal=None,          # no boundary to annotate
             subtask_term_offset_range=(0, 0),
             selection_strategy="nearest_neighbor_object",
