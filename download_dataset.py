@@ -11,7 +11,7 @@ Usage
 -----
   # Interactive — lists your HF datasets and lets you pick
   python download_dataset.py --base /workspace/capstone-vla
-
+ python download_dataset.py --base /workspace/IsaacLab
   # Direct — skip the picker, download immediately
   python download_dataset.py --base /workspace/capstone-vla --dataset your-username/my-dataset
 
@@ -93,7 +93,7 @@ def resolve_token(base: Path, reauth: bool) -> str:
 def resolve_base(base_arg: str) -> Path:
     candidates = [
         Path(base_arg),
-        Path("/workspace/capstone-vla"),
+        Path("/workspace/IsaacLab/datasets"),
         Path("/home/sensethreat/lab_mimic/VLA_IL/capstone-vla"),
     ]
     for p in candidates:

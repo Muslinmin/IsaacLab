@@ -16,7 +16,7 @@ from isaaclab.app import AppLauncher
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Generate demonstrations for Isaac Lab environments.")
 parser.add_argument("--task", type=str, default="Isaac-Pouring-KuavoV4Pro-Mimic-CosmosGen-v0", help="Name of the task.")
-parser.add_argument("--generation_num_trials", type=int, help="Number of demos to be generated.", default=3)
+parser.add_argument("--generation_num_trials", type=int, help="Number of demos to be generated.", default=500)
 parser.add_argument(
     "--num_envs", type=int, default=1, help="Number of environments to instantiate for generating datasets."
 )

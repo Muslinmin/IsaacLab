@@ -38,7 +38,7 @@ class PouringKuavoV4ProMimic_GenCfg(KuavoV4ProPouringPinkIKEnvCfg, MimicEnvCfg):
         subtask_configs = []
         subtask_configs.append(
             SubTaskConfig(
-            object_ref="pouring_cup",          
+            object_ref="pouring_cup_2",          
             subtask_term_signal=None,          # no boundary to annotate
             subtask_term_offset_range=(0, 0),
             selection_strategy="nearest_neighbor_object",
@@ -50,7 +50,7 @@ class PouringKuavoV4ProMimic_GenCfg(KuavoV4ProPouringPinkIKEnvCfg, MimicEnvCfg):
             )
         )
         
-        self.subtask_configs["left"] = subtask_configs
+        self.subtask_configs["right"] = subtask_configs
 
         subtask_configs = []
         subtask_configs.append(
@@ -60,30 +60,6 @@ class PouringKuavoV4ProMimic_GenCfg(KuavoV4ProPouringPinkIKEnvCfg, MimicEnvCfg):
                 # This key corresponds to the binary indicator in "datagen_info" that signals
                 # when this subtask is finished (e.g., on a 0 to 1 edge).
                 subtask_term_signal="grab_lift_cup",
-                first_subtask_start_offset_range=(0, 0),
-                # Randomization range for starting index of the first subtask
-                subtask_term_offset_range=(0, 0),
-                # Selection strategy for the source subtask segment during data generatio
-                selection_strategy="nearest_neighbor_object",
-                # Optional parameters for the selection strategy function
-                selection_strategy_kwargs={"nn_k": 3},
-                # Amount of action noise to apply during this subtask
-                action_noise=0.003,
-                # Number of interpolation steps to bridge to this subtask segment
-                num_interpolation_steps=5,
-                # Additional fixed steps for the robot to reach the necessary pose
-                num_fixed_steps=0,
-                # If True, apply action noise during the interpolation phase and execution
-                apply_noise_during_interpolation=False,
-            )
-        )
-        subtask_configs.append(
-            SubTaskConfig(
-                # Each subtask involves manipulation with respect to a single object frame.
-                object_ref="pouring_cup",
-                # This key corresponds to the binary indicator in "datagen_info" that signals
-                # when this subtask is finished (e.g., on a 0 to 1 edge).
-                subtask_term_signal="pour_done",
                 first_subtask_start_offset_range=(0, 0),
                 # Randomization range for starting index of the first subtask
                 subtask_term_offset_range=(0, 0),
@@ -116,7 +92,7 @@ class PouringKuavoV4ProMimic_GenCfg(KuavoV4ProPouringPinkIKEnvCfg, MimicEnvCfg):
             apply_noise_during_interpolation=False,
         ))
 
-        self.subtask_configs["right"] = subtask_configs
+        self.subtask_configs["left"] = subtask_configs
 
 
 
@@ -146,7 +122,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
         subtask_configs = []
         subtask_configs.append(
             SubTaskConfig(
-            object_ref="pouring_cup",          # idle_right
+            object_ref="pouring_cup_2",          # idle_right
             subtask_term_signal=None,          # no boundary to annotate
             subtask_term_offset_range=(0, 0),
             selection_strategy="nearest_neighbor_object",
@@ -158,7 +134,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
             )
         )
         
-        self.subtask_configs["left"] = subtask_configs
+        self.subtask_configs["right"] = subtask_configs
 
         subtask_configs = []
         subtask_configs.append(
@@ -168,30 +144,6 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
                 # This key corresponds to the binary indicator in "datagen_info" that signals
                 # when this subtask is finished (e.g., on a 0 to 1 edge).
                 subtask_term_signal="grab_lift_cup",
-                first_subtask_start_offset_range=(0, 0),
-                # Randomization range for starting index of the first subtask
-                subtask_term_offset_range=(0, 0),
-                # Selection strategy for the source subtask segment during data generatio
-                selection_strategy="nearest_neighbor_object",
-                # Optional parameters for the selection strategy function
-                selection_strategy_kwargs={"nn_k": 3},
-                # Amount of action noise to apply during this subtask
-                action_noise=0.003,
-                # Number of interpolation steps to bridge to this subtask segment
-                num_interpolation_steps=5,
-                # Additional fixed steps for the robot to reach the necessary pose
-                num_fixed_steps=0,
-                # If True, apply action noise during the interpolation phase and execution
-                apply_noise_during_interpolation=False,
-            )
-        )
-        subtask_configs.append(
-            SubTaskConfig(
-                # Each subtask involves manipulation with respect to a single object frame.
-                object_ref="pouring_cup",
-                # This key corresponds to the binary indicator in "datagen_info" that signals
-                # when this subtask is finished (e.g., on a 0 to 1 edge).
-                subtask_term_signal="pour_done",
                 first_subtask_start_offset_range=(0, 0),
                 # Randomization range for starting index of the first subtask
                 subtask_term_offset_range=(0, 0),
@@ -224,8 +176,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
             apply_noise_during_interpolation=False,
         ))
 
-        self.subtask_configs["right"] = subtask_configs
-
+        self.subtask_configs["left"] = subtask_configs
 
 
 
@@ -255,7 +206,7 @@ class PouringKuavoV4ProMimic_AnnotateEnvCfg(PourKuavoV4ProTeleopEnvCfg, MimicEnv
         subtask_configs = []
         subtask_configs.append(
             SubTaskConfig(
-            object_ref="pouring_cup",          # idle_right
+            object_ref="pouring_cup_2",          # idle_right
             subtask_term_signal=None,          # no boundary to annotate
             subtask_term_offset_range=(0, 0),
             selection_strategy="nearest_neighbor_object",
@@ -267,7 +218,7 @@ class PouringKuavoV4ProMimic_AnnotateEnvCfg(PourKuavoV4ProTeleopEnvCfg, MimicEnv
             )
         )
         
-        self.subtask_configs["left"] = subtask_configs
+        self.subtask_configs["right"] = subtask_configs
 
         subtask_configs = []
         subtask_configs.append(
@@ -294,31 +245,6 @@ class PouringKuavoV4ProMimic_AnnotateEnvCfg(PourKuavoV4ProTeleopEnvCfg, MimicEnv
                 apply_noise_during_interpolation=False,
             )
         )
-        subtask_configs.append(
-            SubTaskConfig(
-                # Each subtask involves manipulation with respect to a single object frame.
-                object_ref="pouring_cup",
-                # This key corresponds to the binary indicator in "datagen_info" that signals
-                # when this subtask is finished (e.g., on a 0 to 1 edge).
-                subtask_term_signal="pour_done",
-                first_subtask_start_offset_range=(0, 0),
-                # Randomization range for starting index of the first subtask
-                subtask_term_offset_range=(0, 0),
-                # Selection strategy for the source subtask segment during data generatio
-                selection_strategy="nearest_neighbor_object",
-                # Optional parameters for the selection strategy function
-                selection_strategy_kwargs={"nn_k": 3},
-                # Amount of action noise to apply during this subtask
-                action_noise=0.003,
-                # Number of interpolation steps to bridge to this subtask segment
-                num_interpolation_steps=5,
-                # Additional fixed steps for the robot to reach the necessary pose
-                num_fixed_steps=0,
-                # If True, apply action noise during the interpolation phase and execution
-                apply_noise_during_interpolation=False,
-            )
-        )
-
 
         # dummy final subtask so "place_done" isn't the last one
         subtask_configs.append(SubTaskConfig(
@@ -334,5 +260,4 @@ class PouringKuavoV4ProMimic_AnnotateEnvCfg(PourKuavoV4ProTeleopEnvCfg, MimicEnv
             apply_noise_during_interpolation=False,
         ))
 
-
-        self.subtask_configs["right"] = subtask_configs
+        self.subtask_configs["left"] = subtask_configs

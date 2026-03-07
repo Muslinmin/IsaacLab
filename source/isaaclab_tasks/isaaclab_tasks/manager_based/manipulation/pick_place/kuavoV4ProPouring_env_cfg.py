@@ -411,7 +411,55 @@ def _maybe_override_arm_actuators(base_cfg: ArticulationCfg) -> ArticulationCfg:
     
     return base_cfg.replace(actuators=new_actuators)
 
+##################################################################################
 
+
+split_id = 1 #(0-2) # training id for dataset generation, can be used to assign different materials to different splits
+#BASE_ASSET_DIR = "/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data"
+
+BASE_ASSET_DIR = "/workspace/IsaacLab/source/isaaclab_assets/data"
+
+TABLE_MATS = [
+    sim_utils.MdlFileCfg(mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Wood/oak.mdl", project_uvw=True, texture_scale=(1.5, 1.5)),
+    sim_utils.MdlFileCfg(mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Wood/Walnut.mdl",    project_uvw=True, texture_scale=(2.0, 2.0)),
+    sim_utils.MdlFileCfg(mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Wood/Mahogany.mdl",project_uvw=True,texture_scale=(1.0, 1.0))  # plain grey
+]
+# BASE_ASSET_DIR = "/workspace/IsaacLab/source/isaaclab_assets/data"
+OBJECT_VARIANTS = [
+    # Variant 0 (default)
+    {
+        "bowl": f"{BASE_ASSET_DIR}/bowl.usd",
+        "cup_1": f"{BASE_ASSET_DIR}/cup_1.usd",
+        "cup_2": f"{BASE_ASSET_DIR}/cup_2.usd",
+    },
+    # Variant 1
+    {
+        "bowl": f"{BASE_ASSET_DIR}/var_1/bowl.usd",
+        "cup_1": f"{BASE_ASSET_DIR}/var_1/cup_1.usd",
+        "cup_2": f"{BASE_ASSET_DIR}/var_1/cup_2.usd",
+    },
+    # Variant 2
+    {
+        "bowl": f"{BASE_ASSET_DIR}/var_2/bowl.usd",
+        "cup_1": f"{BASE_ASSET_DIR}/var_2/cup_1.usd",
+        "cup_2": f"{BASE_ASSET_DIR}/var_2/cup_2.usd",
+    },
+]
+
+
+LIGHT_PRESETS = [
+    dict(intensity=1200.0, color=(0.75, 0.75, 0.75)),  # dark
+    dict(intensity=3000.0, color=(0.75, 0.75, 0.75)),  # normal
+    dict(intensity=7000.0, color=(0.75, 0.75, 0.75)),  # bright
+]
+ASSETS = OBJECT_VARIANTS[split_id]
+table_cfg = TABLE_MATS[split_id]
+light_cfg = LIGHT_PRESETS[split_id]
+
+
+
+
+#################################################################################
 
 ROBOT_CFG = _maybe_override_arm_actuators(_maybe_override_finger_actuators(KUAVO_V4PRO_CFG))
 # ---------------------------
@@ -428,6 +476,10 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
         init_state=ArticulationCfg.InitialStateCfg(
             pos=(0, 0, 0.93),
             rot=(0.7071, 0, 0, 0.7071),
+            joint_pos={
+                "zarm_l4_joint": -2.1,
+                "zarm_r4_joint": -2.1,
+            },
             joint_vel={".*": 0.0},
         ),
         spawn=UsdFileCfg(
@@ -476,23 +528,20 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     # Lights
     light = AssetBaseCfg(
         prim_path="/World/light",
-        spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
+        spawn=sim_utils.DomeLightCfg(color=light_cfg["color"], intensity=light_cfg["intensity"]),
     )
 
-    ################################################## NON-ROBOTIC ASSETS ##################################################
-
-    table = AssetBaseCfg(
-        prim_path="/World/envs/env_.*/Table",
-        init_state=AssetBaseCfg.InitialStateCfg(pos=[0.0, 0.55, 0.0], rot=[1.0, 0.0, 0.0, 0.0]),
+    ################################################## NON-ROBOTIC ASSETS #################################################
+    table = RigidObjectCfg(
+        prim_path="{ENV_REGEX_NS}/Table",
+        init_state=RigidObjectCfg.InitialStateCfg(pos=[0.0, 0.65, 0.0], rot=[1.0, 0.0, 0.0, 0.0]),
         spawn=UsdFileCfg(
             usd_path=f"{ISAACLAB_NUCLEUS_DIR}/Mimic/nut_pour_task/nut_pour_assets/table.usd",
             scale=(1.0, 1.0, 1.3),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=(0.0908, 0.0343, 0.0242),
-                roughness=0.7,
-                metallic=0.0,
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                kinematic_enabled=True,  # won't fall, but CAN be repositioned per-env
             ),
+            visual_material=table_cfg
         ),
     )
 
@@ -505,7 +554,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
             pos=[0.00492, 0.4432, 1.00878],
         ),
         spawn=UsdFileCfg(
-            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/bowl.usd",
+            usd_path=ASSETS["bowl"],
             scale=(0.001, 0.001, 0.001),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
             collision_props=sim_utils.CollisionPropertiesCfg(contact_offset=0.005),
@@ -519,8 +568,8 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
             rot=[0.7071068, 0.7071068, 0.0, 0.0],  # 90 deg around X
         ),
         spawn=UsdFileCfg(
-            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/cup_1.usd",
-            scale=(0.0007, 0.0007, 0.0007),
+            usd_path=ASSETS["cup_1"],
+            scale=(0.0005, 0.0007, 0.0005),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
@@ -531,8 +580,8 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
             rot=[0.7071068, 0.7071068, 0.0, 0.0],  # 90 deg around X
         ),
         spawn=UsdFileCfg(
-            usd_path="/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data/cup_2.usd",
-            scale=(0.0007, 0.0007, 0.0007),
+            usd_path=ASSETS["cup_2"],
+            scale=(0.0005, 0.0007, 0.0005),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(),
         ),
     )
@@ -566,23 +615,23 @@ class ObjectTableSceneGenerateCfg(ObjectTableSceneCfg):
     # Override ego camera: 720p + depth + seg
     cam_egoview = CameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/camera/cam_egoview",
-        data_types=["rgb", "distance_to_image_plane", "semantic_segmentation"],
-        width=1280,
-        height=720,
+        data_types=["rgb"],
+        width=640,
+        height=480,
         spawn=None,
     )
     cam_leftwristview = CameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/l_palm/cam_leftwristview",
-        data_types=["rgb", "distance_to_image_plane", "semantic_segmentation"],
-        width=1280,
-        height=720,
+        data_types=["rgb"],
+        width=640,
+        height=480,
         spawn=None,
     )
     cam_rightwristview = CameraCfg(
         prim_path="{ENV_REGEX_NS}/Robot/r_palm/cam_rightwristview",
-        data_types=["rgb", "distance_to_image_plane", "semantic_segmentation"],
-        width=1280,
-        height=720,
+        data_types=["rgb"],
+        width=640,
+        height=480,
         spawn=None,
     )
 
@@ -885,10 +934,10 @@ class EventCfg:
         mode="reset",
         params={
             "xy_range": {
-                "x": [-0.04, 0.04],
-                "y": [-0.04, 0.04],
+                "x": [-0.02, 0.02],
+                "y": [-0.02, 0.02],
             },
-            "table_z_range": (-0.03, 0.03),   # table height -3cm to +3cm
+            "table_z_range": (-0.01, 0.01),   # table height -3cm to +3cm
             "yaw_range": (0, 0),        # ~±8.6 degrees yaw
             "min_distance": 0.12,              # 12cm minimum between objects
         },
@@ -944,7 +993,6 @@ class PourKuavoV4ProGenerateBaseEnvCfg(PourKuavoV4ProBaseEnvCfg):
     scene: ObjectTableSceneGenerateCfg = ObjectTableSceneGenerateCfg(
         num_envs=1, env_spacing=2.5, replicate_physics=True
     )
-    observations: ObservationsGenerateCfg = ObservationsGenerateCfg()  #Including the record for depth and seg cameras
     def __post_init__(self):
         super().__post_init__()
         # All 3 cameras active for Cosmos export
