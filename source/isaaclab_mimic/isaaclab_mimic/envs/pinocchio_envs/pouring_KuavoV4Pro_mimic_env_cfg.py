@@ -107,7 +107,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
         self.datagen_config.name = "KuavoV4Pro_pouring_D0"
         self.datagen_config.generation_guarantee = True
         self.datagen_config.generation_keep_failed = False
-        self.datagen_config.generation_num_trials = 100
+        self.datagen_config.generation_num_trials = 1000
         self.datagen_config.generation_select_src_per_subtask = False
         self.datagen_config.generation_select_src_per_arm = False
         self.datagen_config.generation_relative = False
@@ -122,7 +122,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
         subtask_configs = []
         subtask_configs.append(
             SubTaskConfig(
-            object_ref="pouring_cup_2",          # idle_right
+            object_ref="pouring_cup",          
             subtask_term_signal=None,          # no boundary to annotate
             subtask_term_offset_range=(0, 0),
             selection_strategy="nearest_neighbor_object",
@@ -134,13 +134,13 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
             )
         )
         
-        self.subtask_configs["right"] = subtask_configs
+        self.subtask_configs["left"] = subtask_configs
 
         subtask_configs = []
         subtask_configs.append(
             SubTaskConfig(
                 # Each subtask involves manipulation with respect to a single object frame.
-                object_ref="pouring_cup",
+                object_ref="pouring_cup_2",
                 # This key corresponds to the binary indicator in "datagen_info" that signals
                 # when this subtask is finished (e.g., on a 0 to 1 edge).
                 subtask_term_signal="grab_lift_cup",
@@ -164,7 +164,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
 
         # dummy final subtask so "place_done" isn't the last one
         subtask_configs.append(SubTaskConfig(
-            object_ref="pouring_cup",
+            object_ref="pouring_cup_2",
             subtask_term_signal="episode_done_idle",
             first_subtask_start_offset_range=(0, 0),
             subtask_term_offset_range=(0, 0),
@@ -176,7 +176,7 @@ class PouringKuavoV4ProMimic_CosmosGenCfg(KuavoV4ProPouringPinkIKCosmosEnvCfg, M
             apply_noise_during_interpolation=False,
         ))
 
-        self.subtask_configs["left"] = subtask_configs
+        self.subtask_configs["right"] = subtask_configs
 
 
 

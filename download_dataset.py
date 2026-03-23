@@ -11,7 +11,7 @@ Usage
 -----
   # Interactive — lists your HF datasets and lets you pick
   python download_dataset.py --base /workspace/capstone-vla
- python download_dataset.py --base /workspace/IsaacLab
+ python download_dataset.py --base /workspace/IsaacLab  --dataset Lusmse/sd
   # Direct — skip the picker, download immediately
   python download_dataset.py --base /workspace/capstone-vla --dataset your-username/my-dataset
 

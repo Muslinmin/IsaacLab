@@ -78,20 +78,20 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
 
     def step(self, action: torch.Tensor):
         # Debug: print first few steps
-        if not hasattr(self, '_step_count'):
-            self._step_count = 0
-        if self._step_count < 50:
-            robot = self.scene["robot"]
-            jp = robot.data.joint_pos[0]
-            print(f"[STEP {self._step_count}] action shape: {action.shape}")
-            print(f"[STEP {self._step_count}] l4: {jp[16].item():.4f}, r4: {jp[17].item():.4f}")
-            print(f"  action[0, :14]: {action[0, :14].tolist()}")
-            self._step_count += 1
+        # if not hasattr(self, '_step_count'):
+        #     self._step_count = 0
+        # if self._step_count < 50:
+        #     robot = self.scene["robot"]
+        #     jp = robot.data.joint_pos[0]
+        #     # print(f"[STEP {self._step_count}] action shape: {action.shape}")
+        #     # print(f"[STEP {self._step_count}] l4: {jp[16].item():.4f}, r4: {jp[17].item():.4f}")
+        #     # print(f"  action[0, :14]: {action[0, :14].tolist()}")
+        #     self._step_count += 1
             
             
-            print(f"  joint_pos[16] (l4): {jp[16].item():.4f}")
-            print(f"  joint_pos[17] (r4): {jp[17].item():.4f}")
-            print(f"  left_z target: {action[0, 2].item():.4f}, right_z target: {action[0, 9].item():.4f}")
+        #     # print(f"  joint_pos[16] (l4): {jp[16].item():.4f}")
+        #     # print(f"  joint_pos[17] (r4): {jp[17].item():.4f}")
+        #     # print(f"  left_z target: {action[0, 2].item():.4f}, right_z target: {action[0, 9].item():.4f}")
         pink = self.action_manager._terms.get("pink", None)
 
         # Keep a copy of the original finger vector (cfg/teleop order) for debugging

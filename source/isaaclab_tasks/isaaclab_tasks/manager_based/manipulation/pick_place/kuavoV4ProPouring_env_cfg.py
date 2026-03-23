@@ -414,13 +414,13 @@ def _maybe_override_arm_actuators(base_cfg: ArticulationCfg) -> ArticulationCfg:
 ##################################################################################
 
 
-split_id = 1 #(0-2) # training id for dataset generation, can be used to assign different materials to different splits
+split_id = 2 #(0-2) # training id for dataset generation, can be used to assign different materials to different splits
 #BASE_ASSET_DIR = "/home/sensethreat/lab_mimic/IsaacLab/source/isaaclab_assets/data"
 
 BASE_ASSET_DIR = "/workspace/IsaacLab/source/isaaclab_assets/data"
 
 TABLE_MATS = [
-    sim_utils.MdlFileCfg(mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Wood/oak.mdl", project_uvw=True, texture_scale=(1.5, 1.5)),
+    sim_utils.MdlFileCfg(mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Wood/Oak.mdl", project_uvw=True, texture_scale=(1.5, 1.5)),
     sim_utils.MdlFileCfg(mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Wood/Walnut.mdl",    project_uvw=True, texture_scale=(2.0, 2.0)),
     sim_utils.MdlFileCfg(mdl_path="{NVIDIA_NUCLEUS_DIR}/Materials/Base/Wood/Mahogany.mdl",project_uvw=True,texture_scale=(1.0, 1.0))  # plain grey
 ]
@@ -939,9 +939,35 @@ class EventCfg:
             },
             "table_z_range": (-0.01, 0.01),   # table height -3cm to +3cm
             "yaw_range": (0, 0),        # ~±8.6 degrees yaw
-            "min_distance": 0.12,              # 12cm minimum between objects
+            "min_distance": 0.14,              # 12cm minimum between objects
         },
     )
+    randomize_arm_gains = EventTerm(
+        func=base_mdp.randomize_actuator_gains,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=["zarm_l.*", "zarm_r.*"]),
+            "stiffness_distribution_params": (0.75, 1.5),
+            "damping_distribution_params": (0.3, 3.0),
+            "operation": "scale",
+            "distribution": "log_uniform",
+        },
+    )
+
+
+    randomize_finger_gains = EventTerm(
+        func=base_mdp.randomize_actuator_gains,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=["l_thumb.*", "l_index.*", "l_middle.*", "l_ring.*", "l_little.*",
+                                                            "r_thumb.*", "r_index.*", "r_middle.*", "r_ring.*", "r_little.*"]),
+            "stiffness_distribution_params": (0.85, 1.15),
+            "damping_distribution_params": (0.85, 1.15),
+            "operation": "scale",
+            "distribution": "uniform",
+        },
+    )
+
 
 
 @configclass
