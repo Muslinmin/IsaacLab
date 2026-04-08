@@ -51,31 +51,31 @@ class KuavoPouringPinkActionsCfg:
             fail_on_joint_limit_violation=False,
             variable_input_tasks=[
                 FrameTask(
-                    "biped_s48_l_palm",  # Pinocchio frame name
+                    "l_palm",  # Pinocchio frame name
                     position_cost=8.0,
-                    orientation_cost=1.0,
-                    lm_damping=10,
-                    gain=0.5,
+                    orientation_cost=2.0,
+                    lm_damping=8,
+                    gain=0.9,
                 ),
                 FrameTask(
-                    "biped_s48_r_palm",  # Pinocchio frame name
+                    "r_palm",  # Pinocchio frame name
                     position_cost=8.0,
-                    orientation_cost=1.0,
-                    lm_damping=10,
-                    gain=0.5,
+                    orientation_cost=2.0,
+                    lm_damping=8,
+                    gain=0.9,
                 ),
-                DampingTask(cost=0.5),
+                DampingTask(cost=0.1)
+            ],
+            fixed_input_tasks=[
                 NullSpacePostureTask(
-                    cost=0.2,
-                    lm_damping=1,
-                    controlled_frames=["biped_s48_l_palm", "biped_s48_r_palm"],
+                    cost=5.0,
+                    lm_damping=0.5,
+                    controlled_frames=["l_palm", "r_palm"],
                     controlled_joints=[
                         *[f"zarm_l{i}_joint" for i in range(1, 8)],
                         *[f"zarm_r{i}_joint" for i in range(1, 8)],
                     ],
-                ),
-            ],
-            fixed_input_tasks=[],
+                ),],
             xr_enabled=False,
         ),
     )
@@ -94,13 +94,15 @@ class KuavoV4ProPouringPinkIKEnvCfg(PourKuavoV4ProBaseEnvCfg):
         
         # THEN replace actions with Pink IK
         self.actions = KuavoPouringPinkActionsCfg()
-        
+        temp_urdf_output_path = "/workspace/biped_s48/biped_s48.urdf"
+        temp_urdf_meshes_output_path = "/workspace/biped_s48/meshes"
         # Convert USD to URDF for Pink/Pinocchio
-        temp_urdf_output_path, temp_urdf_meshes_output_path = ControllerUtils.convert_usd_to_urdf(
-            self.scene.robot.spawn.usd_path,
-            "/tmp",
-            force_conversion=True,
-        )
+        # temp_urdf_output_path, temp_urdf_meshes_output_path = ControllerUtils.convert_usd_to_urdf(
+        #     self.scene.robot.spawn.usd_path,
+        #     "/tmp",
+        #     exclude_joints=["joints_camera"],
+        #     force_conversion=True,
+        # )
         
         # Set URDF paths for the IK controller
         self.actions.pink.controller.urdf_path = temp_urdf_output_path
@@ -120,13 +122,14 @@ class KuavoV4ProPouringPinkIKCosmosEnvCfg(PourKuavoV4ProGenerateBaseEnvCfg):
         
         # THEN replace actions with Pink IK
         self.actions = KuavoPouringPinkActionsCfg()
-        
+        temp_urdf_output_path = "/workspace/biped_s48/biped_s48.urdf"
+        temp_urdf_meshes_output_path = "/workspace/biped_s48/meshes"
         # Convert USD to URDF for Pink/Pinocchio
-        temp_urdf_output_path, temp_urdf_meshes_output_path = ControllerUtils.convert_usd_to_urdf(
-            self.scene.robot.spawn.usd_path,
-            "/tmp",
-            force_conversion=True,
-        )
+        # temp_urdf_output_path, temp_urdf_meshes_output_path = ControllerUtils.convert_usd_to_urdf(
+        #     self.scene.robot.spawn.usd_path,
+        #     "/tmp",
+        #     force_conversion=True,
+        # )
         
         # Set URDF paths for the IK controller
         self.actions.pink.controller.urdf_path = temp_urdf_output_path

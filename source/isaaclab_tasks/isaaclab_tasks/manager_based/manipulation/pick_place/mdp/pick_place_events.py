@@ -16,152 +16,6 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedEnv
 
 
-# def reset_object_poses_nut_pour(
-#     env: ManagerBasedEnv,
-#     env_ids: torch.Tensor,
-#     pose_range: dict[str, tuple[float, float]],
-#     sorting_beaker_cfg: SceneEntityCfg = SceneEntityCfg("sorting_beaker"),
-#     factory_nut_cfg: SceneEntityCfg = SceneEntityCfg("factory_nut"),
-#     sorting_bowl_cfg: SceneEntityCfg = SceneEntityCfg("sorting_bowl"),
-#     sorting_scale_cfg: SceneEntityCfg = SceneEntityCfg("sorting_scale"),
-# ):
-#     """Reset the asset root states to a random position and orientation uniformly within the given ranges.
-
-#     Args:
-#         env: The RL environment instance.
-#         env_ids: The environment IDs to reset the object poses for.
-#         sorting_beaker_cfg: The configuration for the sorting beaker asset.
-#         factory_nut_cfg: The configuration for the factory nut asset.
-#         sorting_bowl_cfg: The configuration for the sorting bowl asset.
-#         sorting_scale_cfg: The configuration for the sorting scale asset.
-#         pose_range: The dictionary of pose ranges for the objects. Keys are
-#                     ``x``, ``y``, ``z``, ``roll``, ``pitch``, and ``yaw``.
-#     """
-#     # extract the used quantities (to enable type-hinting)
-#     sorting_beaker = env.scene[sorting_beaker_cfg.name]
-#     factory_nut = env.scene[factory_nut_cfg.name]
-#     sorting_bowl = env.scene[sorting_bowl_cfg.name]
-#     sorting_scale = env.scene[sorting_scale_cfg.name]
-
-#     # get default root state
-#     sorting_beaker_root_states = sorting_beaker.data.default_root_state[env_ids].clone()
-#     factory_nut_root_states = factory_nut.data.default_root_state[env_ids].clone()
-#     sorting_bowl_root_states = sorting_bowl.data.default_root_state[env_ids].clone()
-#     sorting_scale_root_states = sorting_scale.data.default_root_state[env_ids].clone()
-
-#     # get pose ranges
-#     range_list = [pose_range.get(key, (0.0, 0.0)) for key in ["x", "y", "z", "roll", "pitch", "yaw"]]
-#     ranges = torch.tensor(range_list, device=sorting_beaker.device)
-
-#     # randomize sorting beaker and factory nut together
-#     rand_samples = math_utils.sample_uniform(
-#         ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=sorting_beaker.device
-#     )
-#     orientations_delta = math_utils.quat_from_euler_xyz(rand_samples[:, 3], rand_samples[:, 4], rand_samples[:, 5])
-#     positions_sorting_beaker = (
-#         sorting_beaker_root_states[:, 0:3] + env.scene.env_origins[env_ids] + rand_samples[:, 0:3]
-#     )
-#     positions_factory_nut = factory_nut_root_states[:, 0:3] + env.scene.env_origins[env_ids] + rand_samples[:, 0:3]
-#     orientations_sorting_beaker = math_utils.quat_mul(sorting_beaker_root_states[:, 3:7], orientations_delta)
-#     orientations_factory_nut = math_utils.quat_mul(factory_nut_root_states[:, 3:7], orientations_delta)
-
-#     # randomize sorting bowl
-#     rand_samples = math_utils.sample_uniform(
-#         ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=sorting_beaker.device
-#     )
-#     orientations_delta = math_utils.quat_from_euler_xyz(rand_samples[:, 3], rand_samples[:, 4], rand_samples[:, 5])
-#     positions_sorting_bowl = sorting_bowl_root_states[:, 0:3] + env.scene.env_origins[env_ids] + rand_samples[:, 0:3]
-#     orientations_sorting_bowl = math_utils.quat_mul(sorting_bowl_root_states[:, 3:7], orientations_delta)
-
-#     # randomize scorting scale
-#     rand_samples = math_utils.sample_uniform(
-#         ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=sorting_beaker.device
-#     )
-#     orientations_delta = math_utils.quat_from_euler_xyz(rand_samples[:, 3], rand_samples[:, 4], rand_samples[:, 5])
-#     positions_sorting_scale = sorting_scale_root_states[:, 0:3] + env.scene.env_origins[env_ids] + rand_samples[:, 0:3]
-#     orientations_sorting_scale = math_utils.quat_mul(sorting_scale_root_states[:, 3:7], orientations_delta)
-
-#     # set into the physics simulation
-#     sorting_beaker.write_root_pose_to_sim(
-#         torch.cat([positions_sorting_beaker, orientations_sorting_beaker], dim=-1), env_ids=env_ids
-#     )
-#     factory_nut.write_root_pose_to_sim(
-#         torch.cat([positions_factory_nut, orientations_factory_nut], dim=-1), env_ids=env_ids
-#     )
-#     sorting_bowl.write_root_pose_to_sim(
-#         torch.cat([positions_sorting_bowl, orientations_sorting_bowl], dim=-1), env_ids=env_ids
-#     )
-#     sorting_scale.write_root_pose_to_sim(
-#         torch.cat([positions_sorting_scale, orientations_sorting_scale], dim=-1), env_ids=env_ids
-#     )
-
-
-
-# def reset_object_poses_nut_pour(
-#     env: ManagerBasedEnv,
-#     env_ids: torch.Tensor,
-#     pose_range: dict[str, tuple[float, float]],
-#     pouring_cup_cfg: SceneEntityCfg = SceneEntityCfg("pouring_cup"),
-#     factory_nut_cfg: SceneEntityCfg = SceneEntityCfg("factory_nut"),
-#     bowl_cfg: SceneEntityCfg = SceneEntityCfg("bowl"),
-# ):
-#     """Reset object root poses with XY randomization.
-#     - pouring_cup and factory_nut move together (same XY offset, same orientation delta)
-#     - bowl randomized independently (XY offset, orientation delta)
-#     """
-#     # extract assets
-#     pouring_cup = env.scene[pouring_cup_cfg.name]
-#     factory_nut = env.scene[factory_nut_cfg.name]
-#     bowl = env.scene[bowl_cfg.name]
-
-#     # default root states (pos xyz + quat wxyz)
-#     cup_root_states = pouring_cup.data.default_root_state[env_ids].clone()
-#     nut_root_states = factory_nut.data.default_root_state[env_ids].clone()
-#     bowl_root_states = bowl.data.default_root_state[env_ids].clone()
-
-#     # pose ranges: only x,y provided -> z/roll/pitch/yaw become (0,0) => not randomized
-#     range_list = [pose_range.get(key, (0.0, 0.0)) for key in ["x", "y", "z", "roll", "pitch", "yaw"]]
-#     ranges = torch.tensor(range_list, device=pouring_cup.device)
-
-#     # -------------------------
-#     # Randomize cup + nut together
-#     # -------------------------
-#     rand_samples = math_utils.sample_uniform(
-#         ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=pouring_cup.device
-#     )
-#     orientations_delta = math_utils.quat_from_euler_xyz(
-#         rand_samples[:, 3], rand_samples[:, 4], rand_samples[:, 5]
-#     )
-
-#     pos_offset = rand_samples[:, 0:3]
-#     env_origins = env.scene.env_origins[env_ids]
-
-#     cup_pos = cup_root_states[:, 0:3] + env_origins + pos_offset
-#     nut_pos = nut_root_states[:, 0:3] + env_origins + pos_offset
-
-#     cup_quat = math_utils.quat_mul(cup_root_states[:, 3:7], orientations_delta)
-#     nut_quat = math_utils.quat_mul(nut_root_states[:, 3:7], orientations_delta)
-
-#     # -------------------------
-#     # Randomize bowl independently
-#     # -------------------------
-#     rand_samples = math_utils.sample_uniform(
-#         ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=pouring_cup.device
-#     )
-#     orientations_delta = math_utils.quat_from_euler_xyz(
-#         rand_samples[:, 3], rand_samples[:, 4], rand_samples[:, 5]
-#     )
-
-#     bowl_pos = bowl_root_states[:, 0:3] + env_origins + rand_samples[:, 0:3]
-#     bowl_quat = math_utils.quat_mul(bowl_root_states[:, 3:7], orientations_delta)
-
-#     # write to sim
-#     pouring_cup.write_root_pose_to_sim(torch.cat([cup_pos, cup_quat], dim=-1), env_ids=env_ids)
-#     factory_nut.write_root_pose_to_sim(torch.cat([nut_pos, nut_quat], dim=-1), env_ids=env_ids)
-#     bowl.write_root_pose_to_sim(torch.cat([bowl_pos, bowl_quat], dim=-1), env_ids=env_ids
-
-
-
 DEBUG = False
 
 
@@ -200,12 +54,6 @@ def reset_liquid_pour_poses(
     _dbg(f"  env_ids: {env_ids.tolist()}")
 
     # ── Skip randomization during replay/annotation ─────────────────────
-    # When annotate_demos.py (or generate_dataset.py) calls env.reset_to(),
-    # the scene is restored from the HDF5 recording. We must NOT randomize
-    # on top of that, or objects won't match the recorded trajectory.
-    #
-    # The calling script sets env._skip_pose_randomization = True before
-    # calling reset_to(), and clears it after.
     if getattr(env, "_skip_pose_randomization", False):
         _dbg("  ⏭️  SKIPPING randomization (_skip_pose_randomization=True)")
         _dbg("=" * 70)
@@ -218,6 +66,7 @@ def reset_liquid_pour_poses(
     _dbg(f"  min_distance: {min_distance}")
 
     # ── Resolve scene entities ──────────────────────────────────────────
+    table: RigidObject = env.scene[table_cfg.name]
     bowl: RigidObject = env.scene[bowl_cfg.name]
     cup_1: RigidObject = env.scene[cup_1_cfg.name]
     cup_2: RigidObject = env.scene[cup_2_cfg.name]
@@ -230,17 +79,19 @@ def reset_liquid_pour_poses(
     origins = env.scene.env_origins[env_ids]  # (n, 3)
 
     # ── Get default root states ─────────────────────────────────────────
+    table_default = table.data.default_root_state[env_ids].clone()
     bowl_default = bowl.data.default_root_state[env_ids].clone()
     cup_1_default = cup_1.data.default_root_state[env_ids].clone()
     cup_2_default = cup_2.data.default_root_state[env_ids].clone()
     nut_default = factory_nut.data.default_root_state[env_ids].clone()
 
-    # ── Debug: print default positions (local frame, before env_origin) ─
+    # ── Debug: print default positions ──────────────────────────────────
     _dbg("-" * 50)
     _dbg("DEFAULT POSITIONS (local frame, from init_state in cfg):")
-    for i in range(min(n, 3)):  # print first 3 envs max
+    for i in range(min(n, 3)):
         _dbg(f"  env[{env_ids[i].item()}]:")
         _dbg(f"    env_origin:    ({origins[i, 0]:.5f}, {origins[i, 1]:.5f}, {origins[i, 2]:.5f})")
+        _dbg(f"    table default: ({table_default[i, 0]:.5f}, {table_default[i, 1]:.5f}, {table_default[i, 2]:.5f})")
         _dbg(f"    bowl default:  ({bowl_default[i, 0]:.5f}, {bowl_default[i, 1]:.5f}, {bowl_default[i, 2]:.5f})")
         _dbg(f"    cup_1 default: ({cup_1_default[i, 0]:.5f}, {cup_1_default[i, 1]:.5f}, {cup_1_default[i, 2]:.5f})")
         _dbg(f"    cup_2 default: ({cup_2_default[i, 0]:.5f}, {cup_2_default[i, 1]:.5f}, {cup_2_default[i, 2]:.5f})")
@@ -264,37 +115,33 @@ def reset_liquid_pour_poses(
     # ══════════════════════════════════════════════════════════════════════
     # STEP 1: Table Z randomization
     # ══════════════════════════════════════════════════════════════════════
+    # The table must be a RigidObjectCfg with kinematic_enabled=True so it
+    # has per-env poses and won't fall under gravity.  We move the table
+    # up/down and shift all objects by the same dz so they stay on top.
+    # ══════════════════════════════════════════════════════════════════════
     table_dz = torch.zeros(n, device=device)
     if table_z_range[0] != 0.0 or table_z_range[1] != 0.0:
         table_dz = torch.empty(n, device=device).uniform_(table_z_range[0], table_z_range[1])
-
-    # Read table position BEFORE moving it
-    table_entity = env.scene[table_cfg.name]
-    table_pos_before, table_quat = table_entity.get_world_poses()
 
     _dbg("-" * 50)
     _dbg("TABLE Z RANDOMIZATION:")
     for i in range(min(n, 3)):
         eid = env_ids[i].item()
-        _dbg(f"  env[{eid}]: table_z_before={table_pos_before[eid, 2]:.5f}, table_dz={table_dz[i]:.5f}")
+        _dbg(f"  env[{eid}]: table_dz={table_dz[i]:.5f}")
 
-    if table_z_range[0] != 0.0 or table_z_range[1] != 0.0:
-        if not hasattr(env, "_prev_table_dz"):
-            env._prev_table_dz = torch.zeros(env.scene.num_envs, device=device)
+    # Write table pose: default + env_origin + dz
+    table_pos = table_default[:, 0:3] + origins
+    table_pos[:, 2] += table_dz
+    table_pose = torch.cat([table_pos, table_default[:, 3:7]], dim=-1)
+    table.write_root_pose_to_sim(table_pose, env_ids=env_ids)
 
-        table_pos_before[env_ids, 2] += table_dz - env._prev_table_dz[env_ids]
-        table_entity.set_world_poses(positions=table_pos_before, orientations=table_quat)
-        env._prev_table_dz[env_ids] = table_dz
-
-        # Read back to confirm
-        table_pos_after, _ = table_entity.get_world_poses()
-        for i in range(min(n, 3)):
-            eid = env_ids[i].item()
-            _dbg(f"  env[{eid}]: table_z_after={table_pos_after[eid, 2]:.5f}")
+    _dbg("  Table poses written via write_root_pose_to_sim ✅")
 
     # ══════════════════════════════════════════════════════════════════════
     # STEP 2: Compute effective object dz
     # ══════════════════════════════════════════════════════════════════════
+    # Objects must shift by the same table_dz (to stay on the table surface)
+    # plus a small spawn_z_buffer to avoid tunneling.
     object_dz = table_dz + spawn_z_buffer
 
     _dbg("-" * 50)
@@ -405,32 +252,17 @@ def reset_liquid_pour_poses(
         dx=cup_2_dx, dy=cup_2_dy, dz=object_dz,
     )
 
-    # ── Debug: FINAL SUMMARY — the numbers that matter ──────────────────
-    # Re-read table Z after all writes
-    table_pos_final, _ = table_entity.get_world_poses()
-
+    # ── Debug: FINAL SUMMARY ────────────────────────────────────────────
     _dbg("-" * 50)
-    _dbg("🔍 SPAWN HEIGHT DIAGNOSTIC (object_z vs table_surface_z):")
-    _dbg("   If gap is NEGATIVE → object is INSIDE the table!")
-    _dbg("   You need to raise the default Z in your env_cfg.py init_state")
+    _dbg("🔍 SPAWN HEIGHT DIAGNOSTIC:")
     for i in range(min(n, 3)):
         eid = env_ids[i].item()
-        table_surface_z = table_pos_final[eid, 2].item()
-        bowl_z = bowl_final_pos[i, 2].item()
-        cup1_z = cup1_final_pos[i, 2].item()
-        cup2_z = cup2_final_pos[i, 2].item()
-        nut_z = nut_final_pos[i, 2].item()
-
         _dbg(f"  env[{eid}]:")
-        _dbg(f"    table_surface_z: {table_surface_z:.5f}")
-        _dbg(f"    bowl_z:  {bowl_z:.5f}  gap={bowl_z - table_surface_z:+.5f}m  "
-             f"{'✅' if bowl_z > table_surface_z else '❌ INSIDE TABLE'}")
-        _dbg(f"    cup_1_z: {cup1_z:.5f}  gap={cup1_z - table_surface_z:+.5f}m  "
-             f"{'✅' if cup1_z > table_surface_z else '❌ INSIDE TABLE'}")
-        _dbg(f"    cup_2_z: {cup2_z:.5f}  gap={cup2_z - table_surface_z:+.5f}m  "
-             f"{'✅' if cup2_z > table_surface_z else '❌ INSIDE TABLE'}")
-        _dbg(f"    nut_z:   {nut_z:.5f}  gap={nut_z - table_surface_z:+.5f}m  "
-             f"{'✅' if nut_z > table_surface_z else '❌ INSIDE TABLE'}")
+        _dbg(f"    table_z: {table_pos[i, 2]:.5f}  (dz={table_dz[i]:+.5f})")
+        _dbg(f"    bowl_z:  {bowl_final_pos[i, 2]:.5f}")
+        _dbg(f"    cup_1_z: {cup1_final_pos[i, 2]:.5f}")
+        _dbg(f"    cup_2_z: {cup2_final_pos[i, 2]:.5f}")
+        _dbg(f"    nut_z:   {nut_final_pos[i, 2]:.5f}")
 
     _dbg("=" * 70)
 
@@ -550,37 +382,3 @@ def _write_particle_collection_pose(
             p_z = default_states[i, :, 2]
             _dbg(f"    particles env[{env_ids[i].item()}]: "
                  f"{num_particles} spheres, z_min={p_z.min():.5f}, z_max={p_z.max():.5f}")
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# Example EventCfg wiring
-# ═══════════════════════════════════════════════════════════════════════════
-#
-# @configclass
-# class EventCfg:
-#     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
-#
-#     set_factory_nut_mass = EventTerm(
-#         func=mdp.randomize_rigid_body_mass,
-#         mode="startup",
-#         params={
-#             "asset_cfg": SceneEntityCfg("factory_nut"),
-#             "mass_distribution_params": (0.2, 0.2),
-#             "operation": "abs",
-#         },
-#     )
-#
-#     reset_object = EventTerm(
-#         func=mdp.reset_liquid_pour_poses,
-#         mode="reset",
-#         params={
-#             "xy_range": {
-#                 "x": [-0.04, 0.04],
-#                 "y": [-0.04, 0.04],
-#             },
-#             "table_z_range": (-0.02, 0.03),
-#             "yaw_range": (-0.15, 0.15),
-#             "min_distance": 0.12,
-#             "spawn_z_buffer": 0.005,
-#         },
-#     )

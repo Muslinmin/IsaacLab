@@ -1,0 +1,1306 @@
+[3gH    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H    H [INFO] Using python from: /workspace/miniconda3/envs/env_isaaclab/bin/python
+[INFO][AppLauncher]: Using device: cuda:0
+[INFO][AppLauncher]: Loading experience file: /workspace/IsaacLab/apps/isaaclab.python.rendering.kit
+Loading user config located at: '/workspace/miniconda3/envs/env_isaaclab/lib/python3.11/site-packages/isaacsim/kit/data/Kit/Isaac-Sim/5.1/user.config.json'
+[Info] [carb] Logging to file: /workspace/miniconda3/envs/env_isaaclab/lib/python3.11/site-packages/isaacsim/kit/logs/Kit/Isaac-Sim/5.1/kit_20260313_090254.log
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.126.09    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA RTX PRO 6000 Blackwell .. | Yes: 0 |     | 97887   MB | 10de      | 0          |
+|     |                                  |        |     |            | 2bb5      | b86ba8cc.. |
+|     |                                  |        |     |            | f4        |            |
+|=============================================================================================|
+| OS: 24.04.3 LTS (Noble Numbat) ubuntu, Version: 24.04.3, Kernel: 6.8.0-90-generic
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101011 (1.21.1.11)
+| Processor: AMD EPYC 9355 32-Core Processor
+| Bare Metal Cores: 64 | Bare Metal Logical Cores: 128
+| Core Usage Quota: 13.6
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 179290 | Free Memory: 167447
+| Total Page/Swap (MB): 0 | Free Page/Swap: 0
+|---------------------------------------------------------------------------------------------|
+2026-03-13T09:02:57Z [2,806ms] [Warning] [gpu.foundation.plugin] ECC is enabled on physical device 0
+2026-03-13T09:02:57Z [2,811ms] [Warning] [gpu.foundation.plugin] IOMMU is enabled.
+2026-03-13T09:03:00Z [5,669ms] [Warning] [omni.log] Source: omni.hydra was already registered.
+2026-03-13T09:03:02Z [7,529ms] [Warning] [carb] Acquiring non optional plugin interface which is not listed as dependency: [omni::physx::IPhysxBenchmarks v1.0] (plugin: <default plugin>), by client: omni.physics.physx.plugin. Add it to CARB_PLUGIN_IMPL_DEPS() macro of a client.
+2026-03-13T09:03:02Z [7,570ms] [Warning] [omni.isaac.dynamic_control] omni.isaac.dynamic_control is deprecated as of Isaac Sim 4.5. No action is needed from end-users.
+2026-03-13T09:03:09Z [14,932ms] [Warning] [pxr.Semantics] pxr.Semantics is deprecated - please use Semantics instead
+2026-03-13T09:03:11Z [16,719ms] [Warning] [omni.graph.core.plugin] Found duplicate of category 'Replicator' - was 'Annotators', adding 'Fabric Reader'
+2026-03-13T09:03:11Z [16,719ms] [Warning] [omni.graph.core.plugin] Category 'Replicator' not accepted on node type 'omni.replicator.core.FabricReader' in extension 'omni.replicator.core'
+2026-03-13T09:03:11Z [16,725ms] [Warning] [omni.replicator.core.scripts.extension] No material configuration file, adding configuration to material settings directly.
+2026-03-13T09:03:16Z [21,849ms] [Warning] [isaaclab.app.app_launcher] Due to an issue with Pinocchio and pxr.Gf.Matrix4d, patching the Matrix4d constructor to convert arguments into a list of floats.
+2026-03-13T09:03:17Z [22,820ms] [Warning] [omni.kvdb.plugin] Disabling key-value database because another kit process is locking it
+2026-03-13T09:03:17Z [22,850ms] [Warning] [omni.fabric.plugin] Warning: attribute viewportHandle not found for bucket id 9
+
+2026-03-13T09:03:17Z [22,893ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:17Z [22,893ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:17Z [22,894ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+~~~~~~~~~~~~~~~~~~[FingerOverride] Using LEFT damping: [0.13593324105343224, 0.1354558813941609, 0.13596094458219035, 0.13545654385554978, 0.13597650954354926, 0.13545820024185257, 0.13595903915441038, 0.13545540283987673, 0.10425239253323525, 0.10419830571277998]
+~~~~~~~~~~~~~~~~~~[ArmOverride] Using LEFT ARM damping: [223.0873632435, 179.639310837, 178.7483024595, 152.7568531035, 38.5633385175, 14.660670160499999, 6.703558266]
+~~~~~~~~~~~~~~~~~~[ArmOverride] Using RIGHT ARM damping: [219.3980884545, 181.87704563100002, 180.988554954, 154.934892654, 38.201122284, 13.0995413655, 4.0708574655000005]
+[INFO]: Parsing configuration from: isaaclab_mimic.envs.pinocchio_envs.pouring_KuavoV4Pro_mimic_env_cfg:PouringKuavoV4ProMimic_CosmosGenCfg
+2026-03-13T09:03:23Z [28,550ms] [Warning] [isaaclab.envs.manager_based_env] Seed not set for the environment. The environment creation may not be deterministic.
+
+[36m======================================================================================[0m
+[36m[1m[INFO][IsaacLab]: Logging to file: /tmp/isaaclab/logs/isaaclab_2026-03-13_09-03-23.log[0m
+[36m======================================================================================[0m
+
+[33m09:03:23 [simulation_context.py] WARNING: The `enable_external_forces_every_iteration` parameter in the PhysxCfg is set to False. If you are experiencing noisy velocities, consider enabling this flag. You may need to slightly increase the number of velocity iterations (setting it to 1 or 2 rather than 0), together with this flag, to improve the accuracy of velocity updates.[0m
+[INFO]: Base environment:
+	Environment device    : cuda:0
+	Environment seed      : None
+	Physics step-size     : 0.01
+	Rendering step-size   : 0.02
+	Environment step-size : 0.05
+[33m09:03:23 [manager_based_env.py] WARNING: The render interval (2) is smaller than the decimation (5). Multiple render calls will happen for each environment step. If this is not intended, set the render interval to be equal to the decimation.[0m
+2026-03-13T09:03:23Z [28,971ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_0/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_1/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_8/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_4/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_2/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_7/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_11/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_10/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_3/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_9/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_5/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+2026-03-13T09:03:25Z [30,505ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- In </World/envs/env_6/Robot/dummy_link/visuals>: Unresolved reference prim path @/workspace/biped_s48/biped_s48/configuration/biped_s48_physics.usd@</visuals/dummy_link> introduced by @/workspace/biped_s48/biped_s48/configuration/biped_s48_base.usd@</biped_s48/dummy_link/visuals> (recomposing stage on stage @anon:0xe5211a0:World0.usd@ <0xfe075c0>)
+
+[INFO]: Time taken for scene creation : 2.495284 seconds
+[INFO]: Scene manager:  <class InteractiveScene>
+	Number of environments: 12
+	Environment spacing   : 2.5
+	Source prim name      : /World/envs/env_0
+	Global prim paths     : []
+	Replicate physics     : True
+[INFO]: Starting the simulation. This may take a few seconds. Please wait...
+2026-03-13T09:03:27Z [32,776ms] [Warning] [carb] Client omni.hydratexture.plugin has acquired [carb::settings::ISettings v1.0] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+2026-03-13T09:03:27Z [32,790ms] [Warning] [carb] Client omni.hydratexture.plugin has acquired [carb::dictionary::IDictionary v1.1] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+2026-03-13T09:03:28Z [33,386ms] [Warning] [omni.fabric.plugin] USD->Fabric: Unhandled array type string[]
+2026-03-13T09:03:28Z [33,422ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,423ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,423ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,423ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,423ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,423ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,423ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,423ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,424ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,424ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,424ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,424ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,424ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,424ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,424ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,425ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,426ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,427ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,428ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,428ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,428ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,428ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,428ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,428ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,428ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,429ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,430ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,431ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,431ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,431ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,431ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,431ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,431ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,432ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,433ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,434ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,434ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,434ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:reflection_roughness_constant)
+2026-03-13T09:03:28Z [33,434ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,434ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:transmittance_color)
+2026-03-13T09:03:28Z [33,434ms] [Warning] [usdrt.population.plugin] [UsdNoticeHandler] Unhandled attribute type VtArray<std::string> (prim attribute: omni:rtx:material:db:flattener:ior_constant)
+2026-03-13T09:03:28Z [33,563ms] [Warning] [omni.fabric.plugin] getAttributeCount called on non-existent path /World/envs/env_9/Robot/zhead_2_link/visuals/head_pitch/node_STL_BINARY_
+2026-03-13T09:03:28Z [33,563ms] [Warning] [omni.fabric.plugin] getTypes called on non-existent path /World/envs/env_9/Robot/zhead_2_link/visuals/head_pitch/node_STL_BINARY_
+[INFO]: Time taken for simulation start : 4.385293 seconds
+[INFO] Command Manager:  <CommandManager> contains 0 active terms.
++------------------------+
+|  Active Command Terms  |
++--------+-------+-------+
+| Index  | Name  |  Type |
++--------+-------+-------+
++--------+-------+-------+
+
+[INFO] Event Manager:  <EventManager> contains 1 active terms.
++-------------------------------------+
+| Active Event Terms in Mode: 'reset' |
++--------+----------------------------+
+| Index  | Name                       |
++--------+----------------------------+
+|   0    | reset_all                  |
+|   1    | reset_object               |
+|   2    | randomize_arm_gains        |
+|   3    | randomize_finger_gains     |
++--------+----------------------------+
+
+[INFO] Recorder Manager:  <RecorderManager> contains 5 active terms.
++--------------------------------------------------+
+|              Active Recorder Terms               |
++-------+------------------------------------------+
+| Index | Name                                     |
++-------+------------------------------------------+
+|   0   | record_initial_state                     |
+|   1   | record_post_step_states                  |
+|   2   | record_pre_step_actions                  |
+|   3   | record_pre_step_flat_policy_observations |
+|   4   | record_post_step_processed_actions       |
++-------+------------------------------------------+
+
+[INFO] Action Manager:  <ActionManager> contains 1 active terms.
++----------------------------------+
+| Active Action Terms (shape: 34)  |
++---------+--------+---------------+
+|  Index  | Name   |     Dimension |
++---------+--------+---------------+
+|    0    | pink   |            34 |
++---------+--------+---------------+
+
+[INFO] Observation Manager: <ObservationManager> contains 1 groups.
++------------------------------------------------+
+|  Active Observation Terms in Group: 'policy'   |
++--------+----------------------+----------------+
+| Index  | Name                 |     Shape      |
++--------+----------------------+----------------+
+|   0    | actions              |     (34,)      |
+|   1    | robot_joint_pos      |     (48,)      |
+|   2    | left_eef_pos         |      (3,)      |
+|   3    | left_eef_quat        |      (4,)      |
+|   4    | right_eef_pos        |      (3,)      |
+|   5    | right_eef_quat       |      (4,)      |
+|   6    | hand_joint_state     |     (20,)      |
+|   7    | cam_egoview_rgb      | (480, 640, 3)  |
+|   8    | cam_leftwrist_rgb    | (480, 640, 3)  |
+|   9    | cam_rightwrist_rgb   | (480, 640, 3)  |
++--------+----------------------+----------------+
+
+[INFO] Termination Manager:  <TerminationManager> contains 0 active terms.
++----------------------------+
+|  Active Termination Terms  |
++--------+-------+-----------+
+| Index  | Name  |  Time Out |
++--------+-------+-----------+
++--------+-------+-----------+
+
+[INFO] Reward Manager:  <RewardManager> contains 0 active terms.
++-----------------------+
+|  Active Reward Terms  |
++-------+------+--------+
+| Index | Name | Weight |
++-------+------+--------+
++-------+------+--------+
+
+[INFO] Curriculum Manager:  <CurriculumManager> contains 0 active terms.
++----------------------+
+| Active Curriculum Terms |
++-----------+----------+
+|   Index   | Name     |
++-----------+----------+
++-----------+----------+
+
+Creating window for environment.
+[INFO]: Completed setting up the environment...
+2026-03-13T09:04:25Z [90,980ms] [Warning] [carb] Client gpu.foundation.plugin has acquired [gpu::unstable::IMemoryBudgetManagerFactory v0.1] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+cfg hand_joint_names len: 20
+cfg hand_joint_names: ['l_thumbCMC', 'l_thumbMCP', 'l_indexMCP', 'l_indexPIP', 'l_middleMCP', 'l_middlePIP', 'l_ringMCP', 'l_ringPIP', 'l_littleMCP', 'l_littlePIP', 'r_thumbCMC', 'r_thumbMCP', 'r_indexMCP', 'r_indexPIP', 'r_middleMCP', 'r_middlePIP', 'r_ringMCP', 'r_ringPIP', 'r_littleMCP', 'r_littlePIP']
+_hand_joint_ids len: 20
+_hand_joint_ids names: ['l_indexMCP', 'l_littleMCP', 'l_middleMCP', 'l_ringMCP', 'l_thumbCMC', 'r_indexMCP', 'r_littleMCP', 'r_middleMCP', 'r_ringMCP', 'r_thumbCMC', 'l_indexPIP', 'l_littlePIP', 'l_middlePIP', 'l_ringPIP', 'l_thumbMCP', 'r_indexPIP', 'r_littlePIP', 'r_middlePIP', 'r_ringPIP', 'r_thumbMCP']
+Loaded 100 to datagen info pool
+
+************************************************** [K
+0/1 (0.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+0/2 (0.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+1/3 (33.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+2/4 (50.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+3/5 (60.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+3/6 (50.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+3/8 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/9 (44.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/11 (36.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/12 (33.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/13 (30.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/14 (28.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/15 (26.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/16 (25.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+4/17 (23.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/18 (27.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/19 (26.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/20 (25.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/21 (23.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/23 (21.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/24 (20.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/25 (20.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+5/26 (19.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+6/27 (22.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+6/28 (21.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+7/29 (24.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+8/30 (26.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+9/31 (29.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+9/32 (28.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+9/33 (27.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+10/34 (29.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+10/35 (28.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+10/36 (27.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+11/37 (29.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+12/38 (31.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+12/39 (30.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+13/40 (32.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+14/41 (34.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+14/42 (33.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+14/43 (32.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+14/44 (31.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+14/45 (31.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+15/46 (32.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+16/47 (34.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+17/48 (35.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+18/49 (36.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+18/50 (36.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+20/52 (38.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+20/54 (37.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+20/55 (36.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+21/56 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+22/57 (38.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+22/58 (37.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+23/59 (39.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+24/60 (40.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+24/61 (39.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+25/62 (40.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+25/63 (39.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+25/64 (39.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+25/65 (38.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+25/66 (37.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+26/67 (38.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+27/68 (39.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+27/69 (39.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+27/70 (38.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+27/71 (38.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+28/72 (38.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+28/73 (38.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+28/74 (37.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+28/75 (37.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+28/76 (36.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+28/77 (36.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+29/78 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+30/79 (38.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+30/80 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+30/81 (37.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+31/82 (37.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+32/83 (38.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+32/84 (38.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+33/85 (38.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+33/86 (38.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+33/87 (37.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+33/88 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+34/89 (38.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+35/90 (38.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+35/91 (38.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+36/92 (39.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+36/93 (38.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+36/94 (38.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+36/95 (37.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+36/96 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+37/97 (38.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+38/98 (38.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+38/99 (38.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+38/100 (38.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+39/101 (38.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+39/102 (38.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+40/103 (38.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+40/104 (38.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+41/105 (39.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+41/106 (38.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+41/107 (38.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+41/108 (38.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+41/109 (37.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+42/110 (38.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+42/111 (37.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+43/112 (38.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+43/113 (38.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+44/114 (38.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+45/115 (39.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+45/116 (38.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+46/117 (39.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+47/118 (39.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+47/119 (39.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+47/120 (39.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+47/121 (38.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+47/122 (38.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+47/123 (38.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+48/124 (38.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+48/125 (38.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+48/126 (38.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+49/127 (38.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+49/128 (38.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+49/129 (38.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+49/130 (37.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+49/131 (37.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+50/132 (37.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+50/133 (37.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+50/134 (37.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+51/135 (37.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+51/136 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+51/137 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+51/138 (37.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+51/139 (36.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+51/140 (36.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+52/141 (36.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+53/142 (37.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+54/143 (37.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+54/144 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+54/145 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+55/146 (37.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+55/147 (37.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+55/148 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+55/149 (36.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+56/150 (37.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+57/151 (37.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+57/152 (37.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+57/153 (37.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+58/154 (37.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+58/155 (37.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+58/156 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+59/157 (37.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+60/158 (38.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/159 (38.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/160 (38.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/161 (37.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/162 (37.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/163 (37.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/164 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/165 (37.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/166 (36.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+61/167 (36.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+62/168 (36.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+62/169 (36.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+63/170 (37.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+63/171 (36.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+64/172 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+64/173 (37.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+64/174 (36.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+64/175 (36.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+64/176 (36.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+65/177 (36.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+65/178 (36.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+66/179 (36.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+66/180 (36.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+66/181 (36.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+67/182 (36.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+67/183 (36.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+68/184 (37.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+69/185 (37.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+70/186 (37.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+70/187 (37.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+70/188 (37.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+70/189 (37.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+70/190 (36.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+70/192 (36.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/193 (36.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/194 (36.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/195 (36.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/196 (36.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/197 (36.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/198 (35.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/199 (35.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/200 (35.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+71/201 (35.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+72/202 (35.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+72/203 (35.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+72/204 (35.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+72/205 (35.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+72/206 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+73/207 (35.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+73/208 (35.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+74/209 (35.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+74/210 (35.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+75/211 (35.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+75/212 (35.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+75/213 (35.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+75/214 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+76/215 (35.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+77/216 (35.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+77/217 (35.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+77/218 (35.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+77/219 (35.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+78/220 (35.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+78/221 (35.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+78/222 (35.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+78/223 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+78/224 (34.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+78/225 (34.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+79/226 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+79/227 (34.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+80/228 (35.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+80/229 (34.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+80/230 (34.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+80/231 (34.6%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+81/232 (34.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+82/233 (35.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+82/234 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+82/235 (34.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+82/236 (34.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+83/237 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+84/238 (35.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+84/239 (35.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+84/240 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+84/241 (34.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+84/242 (34.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+85/243 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+86/244 (35.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+86/245 (35.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+86/246 (35.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/247 (35.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/248 (35.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/249 (34.9%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/250 (34.8%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/251 (34.7%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/252 (34.5%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/253 (34.4%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/254 (34.3%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/255 (34.1%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+87/256 (34.0%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+88/257 (34.2%) successful demos generated by mimic[K
+************************************************** [K
+
+************************************************** [K
+89/258 (34.5%) successful demos generated by mimic[K
+************************************************** [K

@@ -16,15 +16,15 @@ from isaaclab.app import AppLauncher
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Generate demonstrations for Isaac Lab environments.")
 parser.add_argument("--task", type=str, default="Isaac-Pouring-KuavoV4Pro-Mimic-CosmosGen-v0", help="Name of the task.")
-parser.add_argument("--generation_num_trials", type=int, help="Number of demos to be generated.", default=3)
+parser.add_argument("--generation_num_trials", type=int, help="Number of demos to be generated.", default=300)
 parser.add_argument(
-    "--num_envs", type=int, default=1, help="Number of environments to instantiate for generating datasets."
+    "--num_envs", type=int, default=12, help="Number of environments to instantiate for generating datasets."
 )
-parser.add_argument("--input_file", type=str, default="./datasets/dataset_annotated.hdf5", required=True, help="File path to the source dataset file.")
+parser.add_argument("--input_file", type=str, default="/workspace/IsaacLab/dataset_tools/data/sd/merged_dataset_right.hdf5", required=False, help="File path to the source dataset file.")
 parser.add_argument(
     "--output_file",
     type=str,
-    default="./datasets/output_dataset.hdf5",
+    default="./datasets/right_generated.hdf5",
     help="File path to export recorded and generated episodes.",
 )
 parser.add_argument(
@@ -49,7 +49,7 @@ parser.add_argument(
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
-
+args_cli.enable_cameras = True  # Force enable cameras for data generation
 if args_cli.enable_pinocchio:
     # Import pinocchio before AppLauncher to force the use of the version installed by IsaacLab and not the one installed by Isaac Sim
     # pinocchio is required by the Pink IK controllers and the GR1T2 retargeter

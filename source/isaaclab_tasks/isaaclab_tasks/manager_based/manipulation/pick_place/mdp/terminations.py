@@ -167,7 +167,6 @@ def _dbg_s(msg: str):
     if DEBUG_SUCCESS:
         print(f"[success_dbg] {msg}")
 
-
 def liquid_particle_pour_success(
     env: ManagerBasedRLEnv,
     particle_cfg: SceneEntityCfg = SceneEntityCfg("liquid_particles"),
@@ -189,8 +188,6 @@ def liquid_particle_pour_success(
     bowl: RigidObject = env.scene[bowl_cfg.name]
 
     # ── Cache bowl Z bounds — recompute at step <=1 each episode ────────
-    # Using step <=1 instead of ==0 because at step 0 the write_root_pose_to_sim
-    # from reset may not yet be reflected in root_pos_w (needs a sim step).
     cache_key = "_bowl_z_success_cache"
     should_recache = env.episode_length_buf[0] <= 1 or not hasattr(env, cache_key)
 
@@ -207,12 +204,12 @@ def liquid_particle_pour_success(
                    f"rim={bowl_z[0].item() + bowl_rim_offset:.5f}")
 
     if env.episode_length_buf[0] <= 1 or not hasattr(env, "_table_z_success_cache"):
-        table_entity = env.scene[table_cfg.name]
-        table_positions, _ = table_entity.get_world_poses()
-        env._table_z_success_cache = table_positions[:, 2].clone()
+        table_entity: RigidObject = env.scene[table_cfg.name]
+        table_z = table_entity.data.root_pos_w[:, 2]
+        env._table_z_success_cache = table_z.clone()
         if DEBUG_SUCCESS and env.episode_length_buf[0] <= 1:
             _dbg_s(f"RECACHED table Z at step {env.episode_length_buf[0].item()}: "
-                   f"table_z={table_positions[0, 2]:.5f}")
+                   f"table_z={table_z[0]:.5f}")
 
     bowl_cache = getattr(env, cache_key)
     bowl_z_bottom = bowl_cache["bottom"].unsqueeze(1)
@@ -224,8 +221,8 @@ def liquid_particle_pour_success(
         particles: RigidObjectCollection = env.scene[particle_cfg_local.name]
         cup: RigidObject = env.scene[cup_cfg_local.name]
 
-        p_pos = particles.data.object_pos_w        # (num_envs, N, 3)
-        p_vel = particles.data.object_lin_vel_w     # (num_envs, N, 3)
+        p_pos = particles.data.object_pos_w
+        p_vel = particles.data.object_lin_vel_w
         num_particles = p_pos.shape[1]
 
         xy_dist = torch.norm(p_pos[..., :2] - bowl_xy, dim=-1)
@@ -246,12 +243,10 @@ def liquid_particle_pour_success(
         min_count = int(num_particles * success_ratio)
         success = (in_bowl_count >= min_count) & cup_on_table
 
-        # ── Debug: print every 50 steps + when close to success ─────
         step = env.episode_length_buf[0].item()
         should_print = DEBUG_SUCCESS and (step % 50 == 0 or in_bowl_count[0].item() >= max(1, min_count - 5))
 
         if should_print:
-            # Breakdown: why are particles failing?
             n_inside_xy_0 = inside_xy[0].sum().item()
             n_above_bottom_0 = above_bottom[0].sum().item()
             n_below_rim_0 = below_rim[0].sum().item()
@@ -277,9 +272,7 @@ def liquid_particle_pour_success(
                    f"(threshold={cup_vz_threshold:.3f})")
             _dbg_s(f"  SUCCESS: {success[0].item()}")
 
-            # If close to success but failing, show which particles are outside
             if n_in_bowl_settled_0 < min_count and n_in_bowl_settled_0 > 0:
-                # Show min/max xy_dist for particles that are settled but outside bowl
                 settled_mask = settled[0]
                 outside_settled = settled_mask & ~inside_bowl[0]
                 if outside_settled.any():
@@ -298,54 +291,3 @@ def liquid_particle_pour_success(
         return success_cup1 & success_cup2
     else:
         return success_cup1 | success_cup2
-
-
-
-
-def task_done_exhaust_pipe(
-    env: ManagerBasedRLEnv,
-    blue_exhaust_pipe_cfg: SceneEntityCfg = SceneEntityCfg("blue_exhaust_pipe"),
-    blue_sorting_bin_cfg: SceneEntityCfg = SceneEntityCfg("blue_sorting_bin"),
-    max_blue_exhaust_to_bin_x: float = 0.085,
-    max_blue_exhaust_to_bin_y: float = 0.200,
-    min_blue_exhaust_to_bin_y: float = -0.090,
-    max_blue_exhaust_to_bin_z: float = 0.070,
-) -> torch.Tensor:
-    """Determine if the exhaust pipe task is complete.
-
-    This function checks whether all success conditions for the task have been met:
-    1. The blue exhaust pipe is placed in the correct position
-
-    Args:
-        env: The RL environment instance.
-        blue_exhaust_pipe_cfg: Configuration for the blue exhaust pipe entity.
-        blue_sorting_bin_cfg: Configuration for the blue sorting bin entity.
-        max_blue_exhaust_to_bin_x: Maximum x position of the blue exhaust pipe
-            relative to the blue sorting bin for task completion.
-        max_blue_exhaust_to_bin_y: Maximum y position of the blue exhaust pipe
-            relative to the blue sorting bin for task completion.
-        max_blue_exhaust_to_bin_z: Maximum z position of the blue exhaust pipe
-            relative to the blue sorting bin for task completion.
-
-    Returns:
-        Boolean tensor indicating which environments have completed the task.
-    """
-    # Get object entities from the scene
-    blue_exhaust_pipe: RigidObject = env.scene[blue_exhaust_pipe_cfg.name]
-    blue_sorting_bin: RigidObject = env.scene[blue_sorting_bin_cfg.name]
-
-    # Get positions relative to environment origin
-    blue_exhaust_pipe_pos = blue_exhaust_pipe.data.root_pos_w - env.scene.env_origins
-    blue_sorting_bin_pos = blue_sorting_bin.data.root_pos_w - env.scene.env_origins
-
-    # blue exhaust to bin
-    blue_exhaust_to_bin_x = torch.abs(blue_exhaust_pipe_pos[:, 0] - blue_sorting_bin_pos[:, 0])
-    blue_exhaust_to_bin_y = blue_exhaust_pipe_pos[:, 1] - blue_sorting_bin_pos[:, 1]
-    blue_exhaust_to_bin_z = blue_exhaust_pipe_pos[:, 2] - blue_sorting_bin_pos[:, 2]
-
-    done = blue_exhaust_to_bin_x < max_blue_exhaust_to_bin_x
-    done = torch.logical_and(done, blue_exhaust_to_bin_y < max_blue_exhaust_to_bin_y)
-    done = torch.logical_and(done, blue_exhaust_to_bin_y > min_blue_exhaust_to_bin_y)
-    done = torch.logical_and(done, blue_exhaust_to_bin_z < max_blue_exhaust_to_bin_z)
-
-    return done

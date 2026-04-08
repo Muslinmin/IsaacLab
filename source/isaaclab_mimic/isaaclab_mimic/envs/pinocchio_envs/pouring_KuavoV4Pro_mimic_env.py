@@ -77,6 +77,21 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
         return torch.tensor(perm_list, device=device, dtype=torch.long)
 
     def step(self, action: torch.Tensor):
+        # Debug: print first few steps
+        # if not hasattr(self, '_step_count'):
+        #     self._step_count = 0
+        # if self._step_count < 50:
+        #     robot = self.scene["robot"]
+        #     jp = robot.data.joint_pos[0]
+        #     # print(f"[STEP {self._step_count}] action shape: {action.shape}")
+        #     # print(f"[STEP {self._step_count}] l4: {jp[16].item():.4f}, r4: {jp[17].item():.4f}")
+        #     # print(f"  action[0, :14]: {action[0, :14].tolist()}")
+        #     self._step_count += 1
+            
+            
+        #     # print(f"  joint_pos[16] (l4): {jp[16].item():.4f}")
+        #     # print(f"  joint_pos[17] (r4): {jp[17].item():.4f}")
+        #     # print(f"  left_z target: {action[0, 2].item():.4f}, right_z target: {action[0, 9].item():.4f}")
         pink = self.action_manager._terms.get("pink", None)
 
         # Keep a copy of the original finger vector (cfg/teleop order) for debugging
@@ -191,13 +206,26 @@ class PouringKuavoV4ProMimicEnv(ManagerBasedRLMimicEnv):
 
         
     #     return obs, reward, terminated, truncated, info
-    def reset(self, *args, **kwargs):
-        obs, info = super().reset(*args, **kwargs)
+    # def reset(self, *args, **kwargs):
+    #     obs, info = super().reset(*args, **kwargs)
 
-        # FORCE ARM POSE AFTER EVERY RESET
-        set_fourth_joints_to_90(self)
+    #     # FORCE ARM POSE AFTER EVERY RESET
+    #     set_fourth_joints_to_90(self)
 
-        return obs, info
+    #     return obs, info
+    # def reset(self, *args, **kwargs):
+    #     obs, info = super().reset(*args, **kwargs)
+
+    #     # Force-teleport ALL joints to the correct pose
+    #     robot = self.scene["robot"]
+    #     joint_pos = robot.data.default_joint_pos.clone()
+    #     joint_vel = torch.zeros_like(joint_pos)
+        
+    #     robot.write_joint_state_to_sim(joint_pos, joint_vel)
+    #     robot.set_joint_position_target(joint_pos)
+    #     robot.set_joint_velocity_target(joint_vel)
+
+    #     return obs, info
         
     def get_robot_eef_pose(self, eef_name: str, env_ids: Sequence[int] | None = None) -> torch.Tensor:
         """Return current EEF pose from observations as 4x4 matrices."""
