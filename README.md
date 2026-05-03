@@ -1,141 +1,272 @@
-![Isaac Lab](docs/source/_static/isaaclab.jpg)
+# capstone-vla
+
+**Scaling VLA Fine-Tuning with Synthetic Data Generation**
+
+Investigates whether simulation-generated synthetic demonstrations can augment real-world data to improve fine-tuned Vision-Language-Action (VLA) policy robustness for humanoid robot manipulation. Evaluated on the **KuavoV4Pro 34-DOF humanoid** (LejuRobotics) performing a bimanual liquid-pouring task.
+
+> **Research question:** Can synthetic data generated via simulation augment real demonstrations for a target task and embodiment to improve fine-tuned VLA policy robustness?
 
 ---
 
-# Isaac Lab
+## Repository Structure
 
-[![IsaacSim](https://img.shields.io/badge/IsaacSim-5.1.0-silver.svg)](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html)
-[![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://docs.python.org/3/whatsnew/3.11.html)
-[![Linux platform](https://img.shields.io/badge/platform-linux--64-orange.svg)](https://releases.ubuntu.com/22.04/)
-[![Windows platform](https://img.shields.io/badge/platform-windows--64-orange.svg)](https://www.microsoft.com/en-us/)
-[![pre-commit](https://img.shields.io/github/actions/workflow/status/isaac-sim/IsaacLab/pre-commit.yaml?logo=pre-commit&logoColor=white&label=pre-commit&color=brightgreen)](https://github.com/isaac-sim/IsaacLab/actions/workflows/pre-commit.yaml)
-[![docs status](https://img.shields.io/github/actions/workflow/status/isaac-sim/IsaacLab/docs.yaml?label=docs&color=brightgreen)](https://github.com/isaac-sim/IsaacLab/actions/workflows/docs.yaml)
-[![License](https://img.shields.io/badge/license-BSD--3-yellow.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![License](https://img.shields.io/badge/license-Apache--2.0-yellow.svg)](https://opensource.org/license/apache-2-0)
+```
+capstone-vla/
+├── dataset_tools/                      ← Shared data utilities (conversion, mixing, validation)
+│   ├── hdf5_to_lerobot.py             ← Isaac Lab HDF5 → LeRobot v2.1 converter
+│   ├── data_mixer.py                  ← Episode-level dataset mixer (A + x% B → C)
+│   ├── bake_task_prompts_into_parquet.py ← Bakes task string into Parquet for Pi0
+│   ├── converter.py                   ← LeRobot v2.0 → v2.1 format converter
+│   ├── lerobot_health.py              ← Dataset integrity validator (meta / light / heavy modes)
+│   ├── download_dataset.py            ← Downloads datasets from HuggingFace
+│   ├── upload_checkpoints.py          ← Uploads fine-tuned checkpoints to HuggingFace
+│   ├── parquet_to_csv.py              ← Exports Parquet to CSV for inspection
+│   ├── environment.yml                ← Conda env for dataset tools
+│   └── evaluate_mse/
+│       ├── replay_dataset_tcp.py      ← Open-loop MSE evaluation via TCP/policy server
+│       └── environment.yml
+│
+├── lab/
+│   └── IsaacLab/                      ← Submodule: Isaac Lab (sim + synthetic data gen)
+│
+└── third_party/
+    ├── gr00t/                          ← Submodule: GR00T N1.6-3B (primary VLA)
+    ├── diffusion_policy/               ← Submodule: Diffusion Policy (IL baseline)
+    └── openpi/                         ← Submodule: OpenPI / π₀.₅ (VLA)
+```
 
+---
 
-**Isaac Lab** is a GPU-accelerated, open-source framework designed to unify and simplify robotics research workflows,
-such as reinforcement learning, imitation learning, and motion planning. Built on [NVIDIA Isaac Sim](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html),
-it combines fast and accurate physics and sensor simulation, making it an ideal choice for sim-to-real
-transfer in robotics.
+## Full Pipeline
 
-Isaac Lab provides developers with a range of essential features for accurate sensor simulation, such as RTX-based
-cameras, LIDAR, or contact sensors. The framework's GPU acceleration enables users to run complex simulations and
-computations faster, which is key for iterative processes like reinforcement learning and data-intensive tasks.
-Moreover, Isaac Lab can run locally or be distributed across the cloud, offering flexibility for large-scale deployments.
+```
+1. Collect real demos       Meta Quest 3 → Drake IK → Isaac Lab teleoperation
+                            Output: raw HDF5 (34D joint actions + 3× RGB cameras)
 
-A detailed description of Isaac Lab can be found in our [arXiv paper](https://arxiv.org/abs/2511.04831).
+2. Generate synthetic data  MimicGen in Isaac Lab (annotate subtask boundaries → generate)
+                            Output: synthetic HDF5 (same schema)
 
-## Key Features
+3. Convert to LeRobot       hdf5_to_lerobot.py
+                            34D sim layout → 44D real layout
+                            10D sim hand → 6D real hand (MCP joints only)
+                            RGBA frames → MP4 video per camera
+                            Output: LeRobot v2.1 dataset (Parquet + MP4)
 
-Isaac Lab offers a comprehensive set of tools and environments designed to facilitate robot learning:
+4. Mix datasets             data_mixer.py (e.g. 90% real + 10% synthetic, seed=0)
+                            Episode-level random sampling, provenance tracked in info.json
+                            Output: mixed LeRobot dataset
 
-- **Robots**: A diverse collection of robots, from manipulators, quadrupeds, to humanoids, with more than 16 commonly available models.
-- **Environments**: Ready-to-train implementations of more than 30 environments, which can be trained with popular reinforcement learning frameworks such as RSL RL, SKRL, RL Games, or Stable Baselines. We also support multi-agent reinforcement learning.
-- **Physics**: Rigid bodies, articulated systems, deformable objects
-- **Sensors**: RGB/depth/segmentation cameras, camera annotations, IMU, contact sensors, ray casters.
+5. Fine-tune models         GR00T N1.6-3B on RunPod cloud GPUs
+                            (Diffusion Policy and π₀.₅ were scoped out due to time)
+                            Output: model checkpoints → HuggingFace
 
+6. Deploy & evaluate        Flask HTTP inference server → ROS1 Noetic controller → KuavoV4Pro
+                            All models share a common /predict HTTP interface
+```
 
-## Getting Started
+---
 
-### Documentation
+## Dataset Tools
 
-Our [documentation page](https://isaac-sim.github.io/IsaacLab) provides everything you need to get started, including
-detailed tutorials and step-by-step guides. Follow these links to learn more about:
+### `hdf5_to_lerobot.py`
 
-- [Installation steps](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html#local-installation)
-- [Reinforcement learning](https://isaac-sim.github.io/IsaacLab/main/source/overview/reinforcement-learning/rl_existing_scripts.html)
-- [Tutorials](https://isaac-sim.github.io/IsaacLab/main/source/tutorials/index.html)
-- [Available environments](https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html)
+Converts Isaac Lab HDF5 output to LeRobot v2.1 format for the KuavoV4Pro pouring task.
 
+**Joint layout mapping (34D sim → 44D real):**
 
-## Isaac Sim Version Dependency
+| Segment | Real indices | Source |
+|---------|-------------|--------|
+| Left arm (7 DOF) | [0:7] | `actions[0:7]` |
+| Left hand (6 DOF) | [7:13] | `actions[14:24]`, extract MCP joints [0,1,2,4,6,8] |
+| Left leg (6 DOF) | [13:19] | Zeros |
+| Neck (3 DOF) | [19:22] | Zeros |
+| Right arm (7 DOF) | [22:29] | `actions[7:14]` |
+| Right hand (6 DOF) | [29:35] | `actions[24:34]`, extract MCP joints [0,1,2,4,6,8] |
+| Right leg (6 DOF) | [35:41] | Zeros |
+| Waist (3 DOF) | [41:44] | Zeros |
 
-Isaac Lab is built on top of Isaac Sim and requires specific versions of Isaac Sim that are compatible with each
-release of Isaac Lab. Below, we outline the recent Isaac Lab releases and GitHub branches and their corresponding
-dependency versions for Isaac Sim.
+**Hand sim→real conversion:** 10D sim hand (thumbCMC, thumbMCP, indexMCP, indexPIP, middleMCP, middlePIP, ringMCP, ringPIP, littleMCP, littlePIP) is reduced to 6D by selecting MCP joints only, then linearly rescaled from sim URDF limits [0, upper] to real robot limits [REAL_LOWER, REAL_UPPER].
 
-| Isaac Lab Version             | Isaac Sim Version         |
-| ----------------------------- | ------------------------- |
-| `main` branch                 | Isaac Sim 4.5 / 5.0 / 5.1 |
-| `v2.3.X`                      | Isaac Sim 4.5 / 5.0 / 5.1 |
-| `v2.2.X`                      | Isaac Sim 4.5 / 5.0       |
-| `v2.1.X`                      | Isaac Sim 4.5             |
-| `v2.0.X`                      | Isaac Sim 4.5             |
+**Camera mapping:**
 
+| HDF5 key | LeRobot folder |
+|----------|---------------|
+| `cam_egoview_rgb` | `observation.images.ego_view` |
+| `cam_leftwrist_rgb` | `observation.images.left_wrist_view` |
+| `cam_rightwrist_rgb` | `observation.images.right_wrist_view` |
 
-## Contributing to Isaac Lab
+**Trimming options:** `--trim-start <seconds>`, `--trim-end <seconds>`, `--auto-trim` (jerk detection via joint velocity). Useful for removing snap-to-ready frames at episode start.
 
-We wholeheartedly welcome contributions from the community to make this framework mature and useful for everyone.
-These may happen as bug reports, feature requests, or code contributions. For details, please check our
-[contribution guidelines](https://isaac-sim.github.io/IsaacLab/main/source/refs/contributing.html).
+**Usage:**
+```bash
+python hdf5_to_lerobot.py \
+  --input /path/to/output_dataset.hdf5 \
+  --output /path/to/lerobot_dataset \
+  --task "Use both hands to pour contents from the cup into the bowl" \
+  --fps 20.0 \
+  --trim-start 0.5
+```
 
-## Show & Tell: Share Your Inspiration
+---
 
-We encourage you to utilize our [Show & Tell](https://github.com/isaac-sim/IsaacLab/discussions/categories/show-and-tell)
-area in the `Discussions` section of this repository. This space is designed for you to:
+### `data_mixer.py`
 
-* Share the tutorials you've created
-* Showcase your learning content
-* Present exciting projects you've developed
+Mixes two LeRobot datasets at a configurable episode ratio (A + x% of B → C).
 
-By sharing your work, you'll inspire others and contribute to the collective knowledge
-of our community. Your contributions can spark new ideas and collaborations, fostering
-innovation in robotics and simulation.
+- Chunking is episode-based: `episode_chunk = floor(episode_index / chunks_size)`
+- Global `index` column is rewritten to be contiguous 0..N-1 across the output dataset
+- `task_index` values are remapped on merge (deduplication by task string)
+- Provenance is stored in `info.json` under a `"mixing"` key for later validation
+- Refuses to mix if `modality.json` differs between A and B
+- Includes a `check` subcommand for standalone validation
 
-## Troubleshooting
+**Usage:**
+```bash
+# Mix
+python data_mixer.py mix \
+  --dataset-a /path/to/real_dataset \
+  --dataset-b /path/to/synthetic_dataset \
+  --out /path/to/mixed_dataset \
+  --percent-b 10 \
+  --seed 0 \
+  --force
 
-Please see the [troubleshooting](https://isaac-sim.github.io/IsaacLab/main/source/refs/troubleshooting.html) section for
-common fixes or [submit an issue](https://github.com/isaac-sim/IsaacLab/issues).
+# Validate
+python data_mixer.py check --dataset /path/to/mixed_dataset
+```
 
-For issues related to Isaac Sim, we recommend checking its [documentation](https://docs.isaacsim.omniverse.nvidia.com/latest/index.html)
-or opening a question on its [forums](https://forums.developer.nvidia.com/c/agx-autonomous-machines/isaac/67).
+---
 
-## Support
+### `bake_task_prompts_into_parquet.py`
 
-* Please use GitHub [Discussions](https://github.com/isaac-sim/IsaacLab/discussions) for discussing ideas,
-  asking questions, and requests for new features.
-* Github [Issues](https://github.com/isaac-sim/IsaacLab/issues) should only be used to track executable pieces of
-  work with a definite scope and a clear deliverable. These can be fixing bugs, documentation issues, new features,
-  or general updates.
+Writes canonical task description strings into Parquet files by mapping `task_index → task_text` from `tasks.jsonl`. Required for Pi0 / π₀.₅ which consumes task strings directly rather than integer indices.
 
-## Connect with the NVIDIA Omniverse Community
+---
 
-Do you have a project or resource you'd like to share more widely? We'd love to hear from you!
-Reach out to the NVIDIA Omniverse Community team at OmniverseCommunity@nvidia.com to explore opportunities
-to spotlight your work.
+### `converter.py`
 
-You can also join the conversation on the [Omniverse Discord](https://discord.com/invite/nvidiaomniverse) to
-connect with other developers, share your projects, and help grow a vibrant, collaborative ecosystem
-where creativity and technology intersect. Your contributions can make a meaningful impact on the Isaac Lab
-community and beyond!
+Converts LeRobot datasets from codebase version `v2.0` to `v2.1` (generates per-episode stats, removes deprecated `stats.json`). Can operate on local datasets or push to HuggingFace.
+
+```bash
+python converter.py \
+  --repo-id data/Hf_data/Lusmse/realWorldPouring \
+  --root . \
+  --push-to-hub false
+```
+
+---
+
+### `lerobot_health.py`
+
+Multi-mode dataset validator. Checks episode counts, Parquet schema, video file existence, frame count consistency, and global index integrity.
+
+```bash
+python lerobot_health.py --root /path/to/dataset --mode heavy --strict
+```
+
+Exit codes: `0` = pass, `1` = errors, `2` = warnings (with `--strict`).
+
+---
+
+### `evaluate_mse/replay_dataset_tcp.py`
+
+Open-loop MSE evaluation: replays Parquet + MP4 episodes through a running policy server over TCP, prints predicted actions, and computes MSE vs ground-truth actions. Wire protocol: msgpack dict with 4-byte big-endian length prefix.
+
+```bash
+python replay_dataset_tcp.py \
+  --root /path/to/lerobot_dataset \
+  --host 127.0.0.1 --port 5555 \
+  --episodes 10 \
+  --print-every 20
+```
+
+---
+
+## Submodules
+
+| Submodule | Upstream | What was modified |
+|-----------|----------|-------------------|
+| `lab/IsaacLab` | [isaac-sim/IsaacLab](https://github.com/isaac-sim/IsaacLab) | KuavoV4Pro 34-DOF environment, Pink IK controller (NullSpacePostureTask for elbow flip fix), MimicGen pouring task, ZeroMQ teleoperation device, liquid particle terminations, domain randomisation, `InteractiveScene` state patch for `RigidObjectCollection`, cloud setup scripts |
+| `third_party/gr00t` | [NVIDIA/Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T) | KuavoV4Pro embodiment config, Flask HTTP inference server (`/predict` endpoint), policy fallback patch, 44D modality config |
+| `third_party/diffusion_policy` | [LejuRobotics/kuavo_data_challenge](https://github.com/LejuRobotics/kuavo_data_challenge) | TCP and HTTP deployment servers matching the GR00T `/predict` interface |
+| `third_party/openpi` | [Physical-Intelligence/openpi](https://github.com/Physical-Intelligence/openpi) | KuavoV4Pro training config (26D arm+hand slice), Flask/TCP servers, cloud automation scripts |
+
+Each submodule has its own README.
+
+---
+
+## Setup
+
+```bash
+git clone --recurse-submodules https://github.com/Muslinmin/capstone-vla.git
+cd capstone-vla
+
+# Dataset tools conda environment
+conda env create -f dataset_tools/environment.yml
+conda activate capstone-vla
+
+# For MSE evaluation tools
+conda env create -f dataset_tools/evaluate_mse/environment.yml
+
+# Individual model repos — see each submodule's README for setup
+```
+
+---
+
+## Model Deployment
+
+All three model servers expose the same HTTP `/predict` endpoint, enabling the ROS1 controller to switch between them by changing `model_url`.
+
+| Model | Server | Default port |
+|-------|--------|-------------|
+| GR00T N1.6-3B | `third_party/gr00t/scripts/deployment/http_gr00t_server.py` | 5050 |
+| Diffusion Policy | `third_party/diffusion_policy/kuavo_deploy/diffusion_http_server.py` | 8000 |
+| π₀ / π₀.₅ | `third_party/openpi/src/openpi/serving/openpi_http_server.py` | 8001 |
+
+The ROS1 controller runs inside a Docker container (ROS1 Noetic) and sends proprioception + camera frames to the inference server, which returns a 44D joint position command.
+
+---
+
+## Data & Checkpoints
+
+| Resource | Link |
+|----------|------|
+| Real + synthetic datasets | [Lusmse/syn_realDataset](https://huggingface.co/datasets/Lusmse/syn_realDataset) |
+| Fine-tuned checkpoints | [Lusmse/capstone-vla-checkpoints](https://huggingface.co/Lusmse/capstone-vla-checkpoints) |
+
+Checkpoints can be uploaded/managed via `dataset_tools/upload_checkpoints.py`.
+
+---
+
+## Hardware & Software Stack
+
+| Component | Specification |
+|-----------|--------------|
+| Robot | KuavoV4Pro 34-DOF humanoid (LejuRobotics) |
+| Primary VLA | NVIDIA GR00T N1.6-3B |
+| Simulation | Isaac Lab + Isaac Sim + PhysX 5 |
+| Synthetic data | MimicGen (integrated into Isaac Lab) |
+| Dataset format | LeRobot v2.1 (Parquet + MP4) |
+| IK solver | Pink (Pinocchio-based, with NullSpacePostureTask) |
+| Teleoperation | Meta Quest 3 → ZeroMQ bridge |
+| Cameras | Intel RealSense D435 (ego), D405 (wrist) |
+| Deployment | ROS1 Noetic, Flask HTTP inference server |
+| Cloud compute | RunPod |
+
+---
+
+## Known Bugs Fixed
+
+| Bug | Fix |
+|-----|-----|
+| IK elbow flips during teleoperation | Added `NullSpacePostureTask` in Pink IK config |
+| `RigidObjectCollection` state not captured by `InteractiveScene.get_state()` | Monkey-patched `get_state()` / `reset_to()` |
+| `task_index` stuck at 0 in MimicGen-generated parquet | Fixed prompt indexing in annotation loop |
+| ROS control loop sleep stacking under load | Replaced with dedicated fixed-rate control thread |
+| MimicGen EEF action field incorrect | Sourced from `obs/robot_joint_pos` instead of EEF |
+
+---
 
 ## License
 
-The Isaac Lab framework is released under [BSD-3 License](LICENSE). The `isaaclab_mimic` extension and its
-corresponding standalone scripts are released under [Apache 2.0](LICENSE-mimic). The license files of its
-dependencies and assets are present in the [`docs/licenses`](docs/licenses) directory.
-
-Note that Isaac Lab requires Isaac Sim, which includes components under proprietary licensing terms. Please see the [Isaac Sim license](docs/licenses/dependencies/isaacsim-license.txt) for information on Isaac Sim licensing.
-
-Note that the `isaaclab_mimic` extension requires cuRobo, which has proprietary licensing terms that can be found in [`docs/licenses/dependencies/cuRobo-license.txt`](docs/licenses/dependencies/cuRobo-license.txt).
-
-
-## Citation
-
-If you use Isaac Lab in your research, please cite the technical report:
-
-```
-@article{mittal2025isaaclab,
-  title={Isaac Lab: A GPU-Accelerated Simulation Framework for Multi-Modal Robot Learning},
-  author={Mayank Mittal and Pascal Roth and James Tigue and Antoine Richard and Octi Zhang and Peter Du and Antonio Serrano-Muñoz and Xinjie Yao and René Zurbrügg and Nikita Rudin and Lukasz Wawrzyniak and Milad Rakhsha and Alain Denzler and Eric Heiden and Ales Borovicka and Ossama Ahmed and Iretiayo Akinola and Abrar Anwar and Mark T. Carlson and Ji Yuan Feng and Animesh Garg and Renato Gasoto and Lionel Gulich and Yijie Guo and M. Gussert and Alex Hansen and Mihir Kulkarni and Chenran Li and Wei Liu and Viktor Makoviychuk and Grzegorz Malczyk and Hammad Mazhar and Masoud Moghani and Adithyavairavan Murali and Michael Noseworthy and Alexander Poddubny and Nathan Ratliff and Welf Rehberg and Clemens Schwarke and Ritvik Singh and James Latham Smith and Bingjie Tang and Ruchik Thaker and Matthew Trepte and Karl Van Wyk and Fangzhou Yu and Alex Millane and Vikram Ramasamy and Remo Steiner and Sangeeta Subramanian and Clemens Volk and CY Chen and Neel Jawale and Ashwin Varghese Kuruttukulam and Michael A. Lin and Ajay Mandlekar and Karsten Patzwaldt and John Welsh and Huihua Zhao and Fatima Anes and Jean-Francois Lafleche and Nicolas Moënne-Loccoz and Soowan Park and Rob Stepinski and Dirk Van Gelder and Chris Amevor and Jan Carius and Jumyung Chang and Anka He Chen and Pablo de Heras Ciechomski and Gilles Daviet and Mohammad Mohajerani and Julia von Muralt and Viktor Reutskyy and Michael Sauter and Simon Schirm and Eric L. Shi and Pierre Terdiman and Kenny Vilella and Tobias Widmer and Gordon Yeoman and Tiffany Chen and Sergey Grizan and Cathy Li and Lotus Li and Connor Smith and Rafael Wiltz and Kostas Alexis and Yan Chang and David Chu and Linxi "Jim" Fan and Farbod Farshidian and Ankur Handa and Spencer Huang and Marco Hutter and Yashraj Narang and Soha Pouya and Shiwei Sheng and Yuke Zhu and Miles Macklin and Adam Moravanszky and Philipp Reist and Yunrong Guo and David Hoeller and Gavriel State},
-  journal={arXiv preprint arXiv:2511.04831},
-  year={2025},
-  url={https://arxiv.org/abs/2511.04831}
-}
-```
-
-## Acknowledgement
-
-Isaac Lab development initiated from the [Orbit](https://isaac-orbit.github.io/) framework.
-We gratefully acknowledge the authors of Orbit for their foundational contributions.
+MIT. Individual submodules retain their upstream licenses: BSD-3 for IsaacLab, Apache 2.0 for GR00T and OpenPI, project-specific license for Diffusion Policy.
